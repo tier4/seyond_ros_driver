@@ -107,7 +107,7 @@ class ROSAdapter {
       inno_scan_msg_->is_last_scan = true;
       inno_pkt_pub_->publish(std::move(inno_scan_msg_));
       inno_scan_msg_ = std::make_unique<seyond::msg::SeyondScan>();
-    } else if (packets_width_ >= lidar_config_.aggregate_num) {
+    } else if (lidar_config_.aggregate_num > 0 && packets_width_ >= lidar_config_.aggregate_num) {
       inno_scan_msg_->is_last_scan = false;
       inno_scan_msg_->size = packets_width_;
       packets_width_ = 0;
