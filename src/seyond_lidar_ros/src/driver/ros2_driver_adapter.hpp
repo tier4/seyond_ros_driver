@@ -75,56 +75,45 @@ class ROSAdapter {
  private:
   void subscribePacket(const seyond::msg::SeyondScan::SharedPtr msg) {
     for (const auto& pkt : msg->packets) {
-      if (lidar_config_.replay_rosbag && pkt.has_table && !driver_ptr_->anglehv_table_init_) {
-        driver_ptr_->anglehv_table_.resize(pkt.table.size());
-        std::memcpy(driver_ptr_->anglehv_table_.data(), pkt.table.data(), pkt.table.size());
+      if (lidar_config_.replay_rosbag && !driver_ptr_->anglehv_table_init_ && pkt.type == seyond::msg::SeyondPacket::ANGLE) {
+        driver_ptr_->anglehv_table_.resize(pkt.data.size());
+        std::memcpy(driver_ptr_->anglehv_table_.data(), pkt.data.data(), pkt.data.size());
         driver_ptr_->anglehv_table_init_ = true;
       }
       driver_ptr_->convert_and_parse(reinterpret_cast<const int8_t*>(pkt.data.data()));
     }
 
-    if (msg->is_last_scan) {
-      sensor_msgs::msg::PointCloud2 ros_msg;
-      driver_ptr_->transform_pointcloud();
-      pcl::toROSMsg(*driver_ptr_->pcl_pc_ptr, ros_msg);
-      ros_msg.header.frame_id = lidar_config_.frame_id;
-      int64_t ts_ns = msg->timestamp * 1000;
-      ros_msg.header.stamp.sec = ts_ns / 1000000000;
-      ros_msg.header.stamp.nanosec = ts_ns % 1000000000;
-      ros_msg.width = driver_ptr_->pcl_pc_ptr->width;
-      ros_msg.height = driver_ptr_->pcl_pc_ptr->height;
-      inno_frame_pub_->publish(std::move(ros_msg));
-      driver_ptr_->pcl_pc_ptr->clear();
-    }
+    sensor_msgs::msg::PointCloud2 ros_msg;
+    driver_ptr_->transform_pointcloud();
+    pcl::toROSMsg(*driver_ptr_->pcl_pc_ptr, ros_msg);
+    ros_msg.header = msg->header;
+    ros_msg.width = driver_ptr_->pcl_pc_ptr->width;
+    ros_msg.height = driver_ptr_->pcl_pc_ptr->height;
+    inno_frame_pub_->publish(std::move(ros_msg));
+    driver_ptr_->pcl_pc_ptr->clear();
   }
 
   void publishPacket(const int8_t* pkt, uint64_t pkt_len, double timestamp, bool next_idx) {
     if (next_idx) {
-      frame_count_++;
-      inno_scan_msg_->timestamp = timestamp;
-      inno_scan_msg_->size = packets_width_;
-      packets_width_ = 0;
-      inno_scan_msg_->is_last_scan = true;
-      inno_pkt_pub_->publish(std::move(inno_scan_msg_));
-      inno_scan_msg_ = std::make_unique<seyond::msg::SeyondScan>();
-    } else if (lidar_config_.aggregate_num > 0 && packets_width_ >= lidar_config_.aggregate_num) {
-      inno_scan_msg_->is_last_scan = false;
-      inno_scan_msg_->size = packets_width_;
-      packets_width_ = 0;
+      inno_scan_msg_->header.stamp = inno_scan_msg_->packets.front().stamp;
+      inno_scan_msg_->header.frame_id = lidar_config_.frame_id;
+      if (driver_ptr_->anglehv_table_init_){
+        seyond::msg::SeyondPacket msg;
+        msg.type = msg.ANGLE;
+        msg.data.resize(driver_ptr_->anglehv_table_.size());
+        std::memcpy(msg.data.data(), driver_ptr_->anglehv_table_.data(), driver_ptr_->anglehv_table_.size());
+        inno_scan_msg_->packets.emplace_back(msg);
+      }
       inno_pkt_pub_->publish(std::move(inno_scan_msg_));
       inno_scan_msg_ = std::make_unique<seyond::msg::SeyondScan>();
     }
     seyond::msg::SeyondPacket msg;
+    rclcpp::Time stamp(timestamp);
+    msg.stamp = stamp;
+    // msg.stamp = node_ptr_->get_clock()->now();
+    msg.type = msg.POINTS;
     msg.data.resize(pkt_len);
     std::memcpy(msg.data.data(), pkt, pkt_len);
-    msg.has_table = false;
-    if ((frame_count_ == table_send_hz_) && driver_ptr_->anglehv_table_init_) {
-      frame_count_ = 0;
-      msg.has_table = true;
-      msg.table.resize(driver_ptr_->anglehv_table_.size());
-      std::memcpy(msg.table.data(), driver_ptr_->anglehv_table_.data(), driver_ptr_->anglehv_table_.size());
-    }
-    packets_width_++;
     inno_scan_msg_->packets.emplace_back(msg);
   }
 
@@ -151,9 +140,6 @@ class ROSAdapter {
 
   std::unique_ptr<seyond::msg::SeyondScan> inno_scan_msg_;
 
-  uint32_t frame_count_;
-  uint32_t table_send_hz_{20};
-  uint32_t packets_width_;
 };
 
 class ROSNode {

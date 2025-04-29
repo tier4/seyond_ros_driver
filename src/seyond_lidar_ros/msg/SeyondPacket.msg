@@ -1,3 +1,6 @@
-bool                    has_table          # table tag
-uint8[]                 data               # packet contents
-uint8[]                 table              # lidar table
+uint8 POINTS = 0
+uint8 ANGLE = 1
+
+builtin_interfaces/Time stamp
+uint8 type # packet type
+uint8[] data # packet contents

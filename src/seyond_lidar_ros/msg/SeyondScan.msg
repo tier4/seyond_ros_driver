@@ -1,4 +1,2 @@
-float64                 timestamp
-uint32                  size
-bool                    is_last_scan
-SeyondPacket[]          packets               # packet contents
+std_msgs/Header header
+SeyondPacket[] packets               # packet contents

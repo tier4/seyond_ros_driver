@@ -145,15 +145,13 @@ void ROSDemo::subscribePacket(const seyond::msg::SeyondScan::SharedPtr msg) {
 }
 
 void ROSDemo::printPacketSize(const seyond::msg::SeyondScan::SharedPtr &msg) {
-  packet_size_ += msg->size;
-  if (msg->is_last_scan) {
-    ROS_INFO("packet size per frame: %d", packet_size_);
-    packet_size_ = 0;
-  }
+  packet_size_ += msg->packets.size();
+  ROS_INFO("packet size per frame: %d", packet_size_);
+  packet_size_ = 0;
 }
 
 void ROSDemo::printPacketLossRate(const seyond::msg::SeyondScan::SharedPtr &msg) {
-  packet_size_ += msg->size;
+  packet_size_ += msg->packets.size();
   for (const auto &packet : msg->packets) {
     received_packets_count_++;
     const int8_t *inno_data_pkt = reinterpret_cast<const int8_t *>(packet.data.data());

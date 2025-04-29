@@ -9,8 +9,8 @@ lidars:
       aggregate_num: 0                               #Aggregate number
 
       frame_id: seyond                                #Frame id
-      packet_topic: /iv_packets                       #Packet topic
-      frame_topic: /iv_points                         #Frame topic
+      packet_topic: /seyond_packets                       #Packet topic
+      frame_topic: /seyond_points                         #Frame topic
 
       lidar_name: seyond                              #Lidar name
       lidar_ip: 172.168.1.10                          #Lidar ip
