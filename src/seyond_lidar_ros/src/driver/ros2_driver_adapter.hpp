@@ -75,12 +75,15 @@ class ROSAdapter {
  private:
   void subscribePacket(const seyond::msg::SeyondScan::SharedPtr msg) {
     for (const auto& pkt : msg->packets) {
-      if (lidar_config_.replay_rosbag && !driver_ptr_->anglehv_table_init_ && pkt.type == seyond::msg::SeyondPacket::ANGLE) {
-        driver_ptr_->anglehv_table_.resize(pkt.data.size());
-        std::memcpy(driver_ptr_->anglehv_table_.data(), pkt.data.data(), pkt.data.size());
-        driver_ptr_->anglehv_table_init_ = true;
+      if(pkt.type == seyond::msg::SeyondPacket::ANGLE){
+        if (lidar_config_.replay_rosbag && !driver_ptr_->anglehv_table_init_) {
+          driver_ptr_->anglehv_table_.resize(pkt.data.size());
+          std::memcpy(driver_ptr_->anglehv_table_.data(), pkt.data.data(), pkt.data.size());
+          driver_ptr_->anglehv_table_init_ = true;
+        }
+      }else{
+        driver_ptr_->convert_and_parse(reinterpret_cast<const int8_t*>(pkt.data.data()));
       }
-      driver_ptr_->convert_and_parse(reinterpret_cast<const int8_t*>(pkt.data.data()));
     }
 
     sensor_msgs::msg::PointCloud2 ros_msg;
