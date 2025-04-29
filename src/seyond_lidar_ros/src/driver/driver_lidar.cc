@@ -500,6 +500,7 @@ void DriverLidar::point_xyz_data_parse(bool is_use_refl, uint32_t point_num, Poi
       point.elongation = point_ptr->elongation;
     }
     int32_t roi = point_ptr->in_roi == 3 ? (1 << 2) : 0;
+    point.roi = point_ptr->in_roi == 3 ? 1 : 0;
     point.scan_id = point_ptr->scan_id;
     point.scan_idx = point_ptr->scan_idx;
     point.flags = point_ptr->channel | roi | (point_ptr->facet << 3);

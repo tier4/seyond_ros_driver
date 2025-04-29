@@ -20,6 +20,7 @@ struct EIGEN_ALIGN16 PointXYZIT {
   std::uint16_t scan_id;
   std::uint16_t scan_idx;
   std::uint8_t is_2nd_return;
+  std::uint8_t roi;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 }  // namespace seyond
@@ -33,4 +34,5 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(
     (std::uint8_t, elongation, elongation)
     (std::uint16_t, scan_id, scan_id)
     (std::uint16_t, scan_idx, scan_idx)
-    (std::uint8_t, is_2nd_return, is_2nd_return))
+    (std::uint8_t, is_2nd_return, is_2nd_return)
+    (std::uint8_t, roi, roi))
