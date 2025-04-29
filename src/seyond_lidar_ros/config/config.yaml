@@ -13,7 +13,7 @@ lidars:
       frame_topic: /iv_points                         #Frame topic
 
       lidar_name: seyond                              #Lidar name
-      lidar_ip: 172.168.1.10                          #Lidar ip
+      lidar_ip: 192.168.3.203                          #Lidar ip
       port: 8010                                      #Lidar port
       udp_port: 8010                                  #Udp port
       reflectance_mode: true                          #Reflectance mode
