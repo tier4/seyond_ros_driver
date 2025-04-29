@@ -75,10 +75,16 @@ class ROSAdapter {
  private:
   void subscribePacket(const seyond::msg::SeyondScan::SharedPtr msg) {
     for (const auto& pkt : msg->packets) {
-      if (lidar_config_.replay_rosbag && pkt.has_table && !driver_ptr_->anglehv_table_init_) {
-        driver_ptr_->anglehv_table_.resize(pkt.table.size());
-        std::memcpy(driver_ptr_->anglehv_table_.data(), pkt.table.data(), pkt.table.size());
-        driver_ptr_->anglehv_table_init_ = true;
+      if (lidar_config_.replay_rosbag && !driver_ptr_->anglehv_table_init_) {
+        if(pkt.has_table){
+          driver_ptr_->anglehv_table_.resize(pkt.table.size());
+          std::memcpy(driver_ptr_->anglehv_table_.data(), pkt.table.data(), pkt.table.size());
+          driver_ptr_->anglehv_table_init_ = true;
+          ROS_ERROR("a Packet has hv angletable");
+        }else{
+          ROS_WARN("a Packet has no table");
+          return;
+        }
       }
       driver_ptr_->convert_and_parse(reinterpret_cast<const int8_t*>(pkt.data.data()));
     }
