@@ -50,14 +50,14 @@ class ROSAdapter {
   void init() {
     rclcpp::QoS qos(rclcpp::KeepLast(10));
     qos.reliable();
-    inno_frame_pub_ = node_ptr_->create_publisher<sensor_msgs::msg::PointCloud2>(lidar_config_.frame_topic, qos);
+    inno_frame_pub_ = node_ptr_->create_publisher<sensor_msgs::msg::PointCloud2>("seyond_points", qos);
     driver_ptr_->register_publish_frame_callback(
         std::bind(&ROSAdapter::publishFrame, this, std::placeholders::_1, std::placeholders::_2));
 
     if (lidar_config_.packet_mode) {
-      inno_pkt_pub_ = node_ptr_->create_publisher<seyond::msg::SeyondScan>(lidar_config_.packet_topic, 100);
+      inno_pkt_pub_ = node_ptr_->create_publisher<seyond::msg::SeyondScan>("seyond_packets", 100);
       inno_pkt_sub_ = node_ptr_->create_subscription<seyond::msg::SeyondScan>(
-          lidar_config_.packet_topic, 100, std::bind(&ROSAdapter::subscribePacket, this, std::placeholders::_1));
+          "seyond_packets", 100, std::bind(&ROSAdapter::subscribePacket, this, std::placeholders::_1));
       driver_ptr_->register_publish_packet_callback(std::bind(&ROSAdapter::publishPacket, this, std::placeholders::_1,
                                                               std::placeholders::_2, std::placeholders::_3,
                                                               std::placeholders::_4));
