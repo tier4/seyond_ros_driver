@@ -48,200 +48,100 @@ elseif(${POINT_TYPE} STREQUAL "PointXYZIT")
 endif()
 
 
-if($ENV{ROS_VERSION} MATCHES "2")
-  add_definitions(-DROS2_FOUND)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wno-format-extra-args -Wno-format -Wno-format-security)
+endif()
 
-  if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wno-format-extra-args -Wno-format -Wno-format-security)
-  endif()
+# find dependencies
+find_package(PCL REQUIRED)
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
-  # find dependencies
-  find_package(PCL REQUIRED)
-  find_package(ament_cmake_auto REQUIRED)
-  ament_auto_find_build_dependencies()
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/SeyondPacket.msg"
+  "msg/SeyondScan.msg"
+  DEPENDENCIES std_msgs
+)
 
-  rosidl_generate_interfaces(${PROJECT_NAME}
-    "msg/SeyondPacket.msg"
-    "msg/SeyondScan.msg"
-    DEPENDENCIES std_msgs
-  )
+include_directories(./)
 
-  include_directories(./)
-
-  # seyond_node
-  ament_auto_add_executable(seyond_node
-    node/seyond_node.cc
-    src/driver/driver_lidar.cc
-  )
-
-  
-  if(${rosidl_cmake_VERSION} VERSION_LESS 2.5.0)
-    rosidl_target_interfaces(seyond_node
-    ${PROJECT_NAME} "rosidl_typesupport_cpp")
-  else()
-    rosidl_get_typesupport_target(
-            cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
-    target_link_libraries(seyond_node "${cpp_typesupport_target}")
-  endif()
-
-  target_include_directories(seyond_node
-    PRIVATE
-    src/driver
-    ${SEYOND_SDK_PATH}
-    ${SEYOND_SDK_PATH}/apps
-    ${SEYOND_SDK_PATH}/src
-    ${PCL_INCLUDE_DIRS}
-  )
-
-  target_link_directories(seyond_node
-    PRIVATE
-    ${SEYOND_SDK_PATH}/lib
-  )
-
-  target_link_libraries(seyond_node
-    innolidarsdkclient.a
-    innolidarsdkcommon.a
-    innolidarutils.a
-    ${PCL_LIBRARIES}
-    ${YAML_CPP_LIBRARIES}
-  )
-
-  ament_target_dependencies(seyond_node
-    rclcpp
-    PCL
-    std_msgs
-    sensor_msgs
-    message_filters
-    pcl_msgs
-    pcl_conversions
-  )
-
-  # seyond_test
-  ament_auto_add_executable(seyond_test
-    node/seyond_test.cc
-  )
-
-  if(${rosidl_cmake_VERSION} VERSION_LESS 2.5.0)
-    rosidl_target_interfaces(seyond_test
-    ${PROJECT_NAME} "rosidl_typesupport_cpp")
-  else()
-    rosidl_get_typesupport_target(
-            cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
-    target_link_libraries(seyond_test "${cpp_typesupport_target}")
-  endif()
-
-  ament_target_dependencies(seyond_test
-    rclcpp
-    PCL
-    std_msgs
-    sensor_msgs
-  )
-
-  set_target_properties(seyond_node PROPERTIES
-    BUILD_WITH_INSTALL_RPATH FALSE
-    LINK_FLAGS "-Wl,-rpath,$ORIGIN/")
-
-  # install group
-  ament_auto_package(
-    INSTALL_TO_SHARE
-    launch
-    config
-    rviz
-  )
-
-endif($ENV{ROS_VERSION} MATCHES "2")
+# seyond_node
+ament_auto_add_executable(seyond_node
+  node/seyond_node.cc
+  src/driver/driver_lidar.cc
+)
 
 
-if($ENV{ROS_VERSION} MATCHES "1")
-  add_definitions(-DROS_FOUND)
+if(${rosidl_cmake_VERSION} VERSION_LESS 2.5.0)
+  rosidl_target_interfaces(seyond_node
+  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+else()
+  rosidl_get_typesupport_target(
+          cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+  target_link_libraries(seyond_node "${cpp_typesupport_target}")
+endif()
 
-  set(${PROJECT_NAME}_CATKIN_DEPS
-    roscpp
-    roslib
-    sensor_msgs
-    std_msgs
-    message_generation
-    message_filters
-  )
+target_include_directories(seyond_node
+  PRIVATE
+  src/driver
+  ${SEYOND_SDK_PATH}
+  ${SEYOND_SDK_PATH}/apps
+  ${SEYOND_SDK_PATH}/src
+  ${PCL_INCLUDE_DIRS}
+)
 
-  find_package(catkin REQUIRED COMPONENTS
-    ${${PROJECT_NAME}_CATKIN_DEPS}
-    pcl_conversions
-  )
+target_link_directories(seyond_node
+  PRIVATE
+  ${SEYOND_SDK_PATH}/lib
+)
 
-  find_package(yaml-cpp REQUIRED)
+target_link_libraries(seyond_node
+  innolidarsdkclient.a
+  innolidarsdkcommon.a
+  innolidarutils.a
+  ${PCL_LIBRARIES}
+  ${YAML_CPP_LIBRARIES}
+)
 
-  add_message_files(
-    FILES
-    "SeyondPacket.msg"
-    "SeyondScan.msg"
-  )
-  generate_messages(DEPENDENCIES std_msgs)
+ament_target_dependencies(seyond_node
+  rclcpp
+  PCL
+  std_msgs
+  sensor_msgs
+  message_filters
+  pcl_msgs
+  pcl_conversions
+)
 
-  SET(SEYOND_SDK_LIB_DIR ${SEYOND_SDK_PATH}/lib/)
-  SET(SEYOND_SDK_INC_DIR ${SEYOND_SDK_PATH}/src/)
+# seyond_test
+ament_auto_add_executable(seyond_test
+  node/seyond_test.cc
+)
 
-  include_directories(
-    ./
-    ${SEYOND_SDK_INC_DIR}
-    ${catkin_INCLUDE_DIRS}
-  )
+if(${rosidl_cmake_VERSION} VERSION_LESS 2.5.0)
+  rosidl_target_interfaces(seyond_test
+  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+else()
+  rosidl_get_typesupport_target(
+          cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+  target_link_libraries(seyond_test "${cpp_typesupport_target}")
+endif()
 
-  catkin_package(CATKIN_DEPENDS
-    ${${PROJECT_NAME}_CATKIN_DEPS}
-  )
+ament_target_dependencies(seyond_test
+  rclcpp
+  PCL
+  std_msgs
+  sensor_msgs
+)
 
-  link_directories(
-    ${SEYOND_SDK_LIB_DIR}
-  )
+set_target_properties(seyond_node PROPERTIES
+  BUILD_WITH_INSTALL_RPATH FALSE
+  LINK_FLAGS "-Wl,-rpath,$ORIGIN/")
 
-  add_executable(seyond_node
-    node/seyond_node.cc
-    src/driver/driver_lidar.cc
-  )
-
-  add_dependencies(seyond_node seyond_generate_messages_cpp)
-
-
-  target_link_libraries(seyond_node
-    ${catkin_LIBRARIES}
-    ${YAML_CPP_LIBRARIES}
-    innolidarsdkclient.a
-    innolidarsdkcommon.a
-    innolidarutils.a
-  )
-
-  # seyond_test
-  add_executable(seyond_test
-    node/seyond_test.cc
-  )
-
-  add_dependencies(seyond_test seyond_generate_messages_cpp)
-
-  target_link_libraries(seyond_test
-    ${catkin_LIBRARIES}
-  )
-
-
-  install(TARGETS
-    seyond_node
-    seyond_test
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
-
-  install(FILES
-    launch/start.launch
-    launch/test.launch
-    launch/start_with_config.launch
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
-
-  install(FILES
-    rviz/rviz.rviz
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rviz)
-
-  install(FILES
-    config/config.yaml
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
-
-endif($ENV{ROS_VERSION} MATCHES "1")
+# install group
+ament_auto_package(
+  INSTALL_TO_SHARE
+  launch
+  config
+  rviz
+)
