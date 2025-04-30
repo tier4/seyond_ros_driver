@@ -90,7 +90,7 @@ public:
 
   void subscribePacket(const seyond::msg::SeyondScan::SharedPtr msg) {
     for (const auto& pkt : msg->packets) {
-      if(pkt.type == seyond::msg::SeyondPacket::ANGLE){
+      if(pkt.type == seyond::msg::SeyondPacket::PACKET_TYPE_HVTABLE){
         if (lidar_config_.replay_rosbag && !driver_ptr_->anglehv_table_init_) {
           driver_ptr_->anglehv_table_.resize(pkt.data.size());
           std::memcpy(driver_ptr_->anglehv_table_.data(), pkt.data.data(), pkt.data.size());
@@ -117,7 +117,7 @@ public:
       inno_scan_msg_->header.frame_id = lidar_config_.frame_id;
       if (driver_ptr_->anglehv_table_init_){
         seyond::msg::SeyondPacket msg;
-        msg.type = msg.ANGLE;
+        msg.type = msg.PACKET_TYPE_HVTABLE;
         msg.data.resize(driver_ptr_->anglehv_table_.size());
         std::memcpy(msg.data.data(), driver_ptr_->anglehv_table_.data(), driver_ptr_->anglehv_table_.size());
         inno_scan_msg_->packets.emplace_back(msg);
@@ -129,7 +129,7 @@ public:
     rclcpp::Time stamp(timestamp);
     msg.stamp = stamp;
     // msg.stamp = node_ptr_->get_clock()->now();
-    msg.type = msg.POINTS;
+    msg.type = msg.PACKET_TYPE_POINTS;
     msg.data.resize(pkt_len);
     std::memcpy(msg.data.data(), pkt, pkt_len);
     inno_scan_msg_->packets.emplace_back(msg);
