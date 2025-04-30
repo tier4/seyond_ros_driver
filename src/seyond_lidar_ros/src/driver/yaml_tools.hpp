@@ -41,8 +41,6 @@ class YamlTools {
     }
 
     common_config.log_level = config_["common"]["log_level"].as<std::string>("info");
-    common_config.fusion_enable = config_["common"]["fusion_enable"].as<bool>(false);
-    common_config.fusion_topic = config_["common"]["fusion_topic"].as<std::string>("/iv_points_fusion");
 
     if (config_["lidars"]) {
       for (auto lidar_config : config_["lidars"]) {

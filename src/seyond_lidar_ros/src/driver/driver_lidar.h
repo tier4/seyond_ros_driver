@@ -36,8 +36,6 @@ namespace seyond {
 
 struct CommonConfig {
   std::string log_level;
-  bool fusion_enable;
-  std::string fusion_topic;
 };
 
 struct LidarConfig {

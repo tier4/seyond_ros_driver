@@ -25,7 +25,6 @@
 #include "yaml_tools.hpp"
 #include "seyond/msg/seyond_packet.hpp"
 #include "seyond/msg/seyond_scan.hpp"
-#include "src/multi_fusion/ros2_multi_fusion.hpp"
 
 
 #define ROS_INFO(...) RCLCPP_INFO(rclcpp::get_logger("seyond"), __VA_ARGS__)
@@ -176,9 +175,6 @@ class ROSNode {
       ros_adapters_[i]->init();
     }
 
-    if (common_config_.fusion_enable) {
-      fusion_ = std::make_unique<seyond::MultiFusion>(node_ptr_, lidar_configs_, common_config_);
-    }
   }
 
   void start() {
@@ -191,7 +187,6 @@ class ROSNode {
     seyond::LidarConfig lidar_config;
     // common
     node_ptr_->get_parameter_or<std::string>("log_level", common_config_.log_level, "info");
-    common_config_.fusion_enable = false;
 
     // Parse parameters for ros
     node_ptr_->get_parameter_or<bool>("replay_rosbag", lidar_config.replay_rosbag, false);
@@ -268,5 +263,4 @@ class ROSNode {
   seyond::CommonConfig common_config_;
   std::vector<seyond::LidarConfig> lidar_configs_;
   std::vector<std::unique_ptr<ROSAdapter>> ros_adapters_;
-  std::unique_ptr<seyond::MultiFusion> fusion_;
 };
