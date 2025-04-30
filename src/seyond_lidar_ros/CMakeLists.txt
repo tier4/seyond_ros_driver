@@ -66,8 +66,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 include_directories(./)
 
 # seyond_node
-ament_auto_add_executable(seyond_node
-  node/seyond_node.cc
+ament_auto_add_library(seyond_node SHARED
+  src/driver/seyond_node.cc
   src/driver/driver_lidar.cc
 )
 
@@ -113,30 +113,35 @@ ament_target_dependencies(seyond_node
   pcl_conversions
 )
 
+rclcpp_components_register_node(seyond_node
+  PLUGIN "seyond_node::SeyondNode"
+  EXECUTABLE seyond_component_node
+)
+
 # seyond_test
-ament_auto_add_executable(seyond_test
-  node/seyond_test.cc
-)
+# ament_auto_add_executable(seyond_test
+#   node/seyond_test.cc
+# )
 
-if(${rosidl_cmake_VERSION} VERSION_LESS 2.5.0)
-  rosidl_target_interfaces(seyond_test
-  ${PROJECT_NAME} "rosidl_typesupport_cpp")
-else()
-  rosidl_get_typesupport_target(
-          cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
-  target_link_libraries(seyond_test "${cpp_typesupport_target}")
-endif()
+# if(${rosidl_cmake_VERSION} VERSION_LESS 2.5.0)
+#   rosidl_target_interfaces(seyond_test
+#   ${PROJECT_NAME} "rosidl_typesupport_cpp")
+# else()
+#   rosidl_get_typesupport_target(
+#           cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+#   target_link_libraries(seyond_test "${cpp_typesupport_target}")
+# endif()
 
-ament_target_dependencies(seyond_test
-  rclcpp
-  PCL
-  std_msgs
-  sensor_msgs
-)
+# ament_target_dependencies(seyond_test
+#   rclcpp
+#   PCL
+#   std_msgs
+#   sensor_msgs
+# )
 
-set_target_properties(seyond_node PROPERTIES
-  BUILD_WITH_INSTALL_RPATH FALSE
-  LINK_FLAGS "-Wl,-rpath,$ORIGIN/")
+# set_target_properties(seyond_node PROPERTIES
+#   BUILD_WITH_INSTALL_RPATH FALSE
+#   LINK_FLAGS "-Wl,-rpath,$ORIGIN/")
 
 # install group
 ament_auto_package(
