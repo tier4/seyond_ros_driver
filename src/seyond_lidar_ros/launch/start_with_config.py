@@ -10,7 +10,7 @@ import os
 
 def generate_launch_description():
     rviz_config=get_package_share_directory('seyond')+'/rviz/rviz2.rviz'
-    yaml_config=get_package_share_directory('seyond')+'/config.yaml'
+    yaml_config=get_package_share_directory('seyond')+'/config/config.yaml'
 
     return LaunchDescription(
         [

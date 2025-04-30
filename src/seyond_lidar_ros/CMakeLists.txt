@@ -56,17 +56,9 @@ if($ENV{ROS_VERSION} MATCHES "2")
   endif()
 
   # find dependencies
-  find_package(ament_cmake REQUIRED)
-  find_package(rclcpp REQUIRED)
-  find_package(std_msgs REQUIRED)
-  find_package(sensor_msgs REQUIRED)
   find_package(PCL REQUIRED)
-  find_package(message_filters REQUIRED)
-  find_package(pcl_msgs REQUIRED)
-  find_package(pcl_conversions REQUIRED)
-  find_package(builtin_interfaces REQUIRED)
-  find_package(rosidl_default_generators REQUIRED)
-  find_package(yaml-cpp REQUIRED)
+  find_package(ament_cmake_auto REQUIRED)
+  ament_auto_find_build_dependencies()
 
   rosidl_generate_interfaces(${PROJECT_NAME}
     "msg/SeyondPacket.msg"
@@ -77,12 +69,20 @@ if($ENV{ROS_VERSION} MATCHES "2")
   include_directories(./)
 
   # seyond_node
-  add_executable(seyond_node
+  ament_auto_add_executable(seyond_node
     node/seyond_node.cc
     src/driver/driver_lidar.cc
   )
 
-  rosidl_target_interfaces(seyond_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
+  
+  if(${rosidl_cmake_VERSION} VERSION_LESS 2.5.0)
+    rosidl_target_interfaces(seyond_node
+    ${PROJECT_NAME} "rosidl_typesupport_cpp")
+  else()
+    rosidl_get_typesupport_target(
+            cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+    target_link_libraries(seyond_node "${cpp_typesupport_target}")
+  endif()
 
   target_include_directories(seyond_node
     PRIVATE
@@ -117,11 +117,18 @@ if($ENV{ROS_VERSION} MATCHES "2")
   )
 
   # seyond_test
-  add_executable(seyond_test
+  ament_auto_add_executable(seyond_test
     node/seyond_test.cc
   )
 
-  rosidl_target_interfaces(seyond_test ${PROJECT_NAME} "rosidl_typesupport_cpp")
+  if(${rosidl_cmake_VERSION} VERSION_LESS 2.5.0)
+    rosidl_target_interfaces(seyond_test
+    ${PROJECT_NAME} "rosidl_typesupport_cpp")
+  else()
+    rosidl_get_typesupport_target(
+            cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+    target_link_libraries(seyond_test "${cpp_typesupport_target}")
+  endif()
 
   ament_target_dependencies(seyond_test
     rclcpp
@@ -135,27 +142,13 @@ if($ENV{ROS_VERSION} MATCHES "2")
     LINK_FLAGS "-Wl,-rpath,$ORIGIN/")
 
   # install group
-  install(TARGETS
-    seyond_node
-    seyond_test
-    DESTINATION lib/${PROJECT_NAME}
-  )
-  install(FILES
-    launch/start.py
-    launch/test.py
-    launch/start_with_config.py
-    DESTINATION share/${PROJECT_NAME}
-  )
-  install(FILES
-    rviz/rviz2.rviz
-    DESTINATION share/${PROJECT_NAME}/rviz
-  )
-  install(FILES
-    config/config.yaml
-    DESTINATION share/${PROJECT_NAME}
+  ament_auto_package(
+    INSTALL_TO_SHARE
+    launch
+    config
+    rviz
   )
 
-  ament_package()
 endif($ENV{ROS_VERSION} MATCHES "2")
 
 
