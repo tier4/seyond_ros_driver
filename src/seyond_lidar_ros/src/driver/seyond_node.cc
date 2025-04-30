@@ -139,9 +139,18 @@ public:
     sensor_msgs::msg::PointCloud2 ros_msg;
     pcl::toROSMsg(frame, ros_msg);
     ros_msg.header.frame_id = lidar_config_.frame_id;
-    int64_t ts_ns = timestamp * 1000;
-    ros_msg.header.stamp.sec = ts_ns / 1000000000;
-    ros_msg.header.stamp.nanosec = ts_ns % 1000000000;
+    
+    // Use timestamp from the first point in the frame if available
+    if (!frame.points.empty()) {
+      double point_timestamp = frame.points.front().timestamp;
+      rclcpp::Time stamp(point_timestamp);
+      ros_msg.header.stamp = stamp;
+    } else {
+      // Fallback to the provided timestamp if the frame is empty
+      rclcpp::Time stamp(timestamp);
+      ros_msg.header.stamp = stamp;
+    }
+    
     ros_msg.width = frame.width;
     ros_msg.height = frame.height;
     inno_frame_pub_->publish(std::move(ros_msg));
