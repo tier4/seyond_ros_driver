@@ -64,7 +64,8 @@ public:
     lidar_config_.roll = declare_parameter<double>("roll", 0.0);
     lidar_config_.transform_matrix = declare_parameter<std::string>("transform_matrix","");
 
-    seyond::DriverLidar::init_log_s(log_level_, &SeyondNode::rosLogCallback);
+    seyond::DriverLidar::init_log_s(log_level_, 
+        std::bind(&SeyondNode::rosLogCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     driver_ptr_ = std::make_unique<seyond::DriverLidar>(lidar_config_);
     inno_scan_msg_ = std::make_unique<seyond::msg::SeyondScan>();
 
@@ -148,22 +149,22 @@ public:
     inno_frame_pub_->publish(std::move(ros_msg));
   }
 
-  static void rosLogCallback(int32_t level, const char* header2, const char* msg) {
+  void rosLogCallback(int32_t level, const char* header2, const char* msg) {
     switch (level) {
       case 0:  // INNO_LOG_LEVEL_FATAL
       case 1:  // INNO_LOG_LEVEL_CRITICAL
-        RCLCPP_FATAL(rclcpp::get_logger("seyond"), "%s %s", header2, msg);
+        RCLCPP_FATAL(this->get_logger(), "%s %s", header2, msg);
         break;
       case 2:  // INNO_LOG_LEVEL_ERROR
       case 3:  // INNO_LOG_LEVEL_TEMP
-        RCLCPP_ERROR(rclcpp::get_logger("seyond"), "%s %s", header2, msg);
+        RCLCPP_ERROR(this->get_logger(), "%s %s", header2, msg);
         break;
       case 4:  // INNO_LOG_LEVEL_WARNING
       case 5:  // INNO_LOG_LEVEL_DEBUG
-        RCLCPP_WARN(rclcpp::get_logger("seyond"), "%s %s", header2, msg);
+        RCLCPP_WARN(this->get_logger(), "%s %s", header2, msg);
         break;
       case 6:  // INNO_LOG_LEVEL_INFO
-        RCLCPP_INFO(rclcpp::get_logger("seyond"), "%s %s", header2, msg);
+        RCLCPP_INFO(this->get_logger(), "%s %s", header2, msg);
         break;
       case 7:  // INNO_LOG_LEVEL_TRACE
       case 8:  // INNO_LOG_LEVEL_DETAIL
