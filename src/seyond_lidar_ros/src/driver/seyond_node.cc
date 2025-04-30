@@ -10,8 +10,6 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-#include <std_msgs/msg/float64.hpp>
-#include <yaml-cpp/yaml.h>
 
 #include <limits>
 #include <memory>
@@ -20,9 +18,9 @@
 #include <vector>
 
 #include "driver_lidar.h"
-#include "yaml_tools.hpp"
 #include "seyond/msg/seyond_packet.hpp"
 #include "seyond/msg/seyond_scan.hpp"
+#include "utils/inno_lidar_log.h"
 
 
 namespace seyond_node {
@@ -151,25 +149,25 @@ public:
 
   void rosLogCallback(int32_t level, const char* header2, const char* msg) {
     switch (level) {
-      case 0:  // INNO_LOG_LEVEL_FATAL
-      case 1:  // INNO_LOG_LEVEL_CRITICAL
+      case INNO_LOG_LEVEL_FATAL:
+      case INNO_LOG_LEVEL_CRITICAL:
         RCLCPP_FATAL(this->get_logger(), "%s %s", header2, msg);
         break;
-      case 2:  // INNO_LOG_LEVEL_ERROR
-      case 3:  // INNO_LOG_LEVEL_TEMP
+      case INNO_LOG_LEVEL_ERROR:
+      case INNO_LOG_LEVEL_TEMP:
         RCLCPP_ERROR(this->get_logger(), "%s %s", header2, msg);
         break;
-      case 4:  // INNO_LOG_LEVEL_WARNING
-      case 5:  // INNO_LOG_LEVEL_DEBUG
+      case INNO_LOG_LEVEL_WARNING:
+      case INNO_LOG_LEVEL_DEBUG:
         RCLCPP_WARN(this->get_logger(), "%s %s", header2, msg);
         break;
-      case 6:  // INNO_LOG_LEVEL_INFO
+      case INNO_LOG_LEVEL_INFO:
         RCLCPP_INFO(this->get_logger(), "%s %s", header2, msg);
         break;
-      case 7:  // INNO_LOG_LEVEL_TRACE
-      case 8:  // INNO_LOG_LEVEL_DETAIL
+      case INNO_LOG_LEVEL_TRACE:
+      case INNO_LOG_LEVEL_DETAIL:
       default:
-        RCLCPP_DEBUG(rclcpp::get_logger("seyond"), "%s %s", header2, msg);
+        RCLCPP_DEBUG(this->get_logger(), "%s %s", header2, msg);
     }
   }
 private:
