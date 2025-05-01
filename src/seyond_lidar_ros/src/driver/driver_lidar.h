@@ -42,7 +42,6 @@ struct LidarConfig {
   int32_t index;
   bool replay_rosbag;
   bool packet_mode;
-  int32_t aggregate_num;
 
   std::string frame_id;
   std::string packet_topic;
