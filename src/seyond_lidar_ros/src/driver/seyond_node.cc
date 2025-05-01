@@ -32,7 +32,7 @@ public:
 
     log_level_ = declare_parameter<std::string>("log_level", "info");
     lidar_config_.replay_rosbag = declare_parameter<bool>("replay_rosbag", false);
-    lidar_config_.packet_mode = declare_parameter<bool>("packet_mode", false);
+    lidar_config_.packet_mode = declare_parameter<bool>("packet_mode", true);
     lidar_config_.frame_id = declare_parameter<std::string>("frame_id", "seyond");
     lidar_config_.lidar_name = declare_parameter<std::string>("lidar_name", "seyond");
 

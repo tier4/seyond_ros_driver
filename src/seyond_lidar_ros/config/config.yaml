@@ -2,7 +2,7 @@
   ros__parameters:
     log_level: info # Log level: info, warn, error
     replay_rosbag: false # Replay rosbag
-    packet_mode: false # Packet mode (true: packets + pointcloud, false: direct pointcloud)
+    packet_mode: true # Packet mode (true: packets + pointcloud, false: direct pointcloud)
 
     frame_id: seyond # Frame id
 
