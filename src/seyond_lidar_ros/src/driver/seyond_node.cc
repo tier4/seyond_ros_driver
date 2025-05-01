@@ -29,7 +29,7 @@ public:
   explicit SeyondNode(const rclcpp::NodeOptions &options)
       : Node("seyond_node", options)
   {
-
+    bool publish_pointcloud = declare_parameter<bool>("publish_pointcloud", true);
     log_level_ = declare_parameter<std::string>("log_level", "info");
     lidar_config_.replay_rosbag = declare_parameter<bool>("replay_rosbag", false);
     lidar_config_.packet_mode = declare_parameter<bool>("packet_mode", true);
@@ -78,6 +78,10 @@ public:
       driver_ptr_->register_publish_packet_callback(std::bind(&SeyondNode::publishPacket, this, std::placeholders::_1,
                                                               std::placeholders::_2, std::placeholders::_3,
                                                               std::placeholders::_4));
+    }
+    if(!publish_pointcloud){
+      inno_frame_pub_.reset();
+      inno_pkt_sub_.reset();
     }
 
     driver_ptr_->start_lidar();

@@ -3,6 +3,7 @@
     log_level: info # Log level: info, warn, error
     replay_rosbag: false # Replay rosbag
     packet_mode: true # Packet mode (true: packets + pointcloud, false: direct pointcloud)
+    publish_pointcloud: true # Publish pointcloud
 
     frame_id: seyond # Frame id
 
