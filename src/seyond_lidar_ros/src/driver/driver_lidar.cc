@@ -343,7 +343,7 @@ int32_t DriverLidar::lidar_live_process() {
       inno_log_error("cannot get lidar model, please check the network connection");
     } else {
       double enabled = atof(buf);
-      inno_log_error("modeL %s", model);
+      inno_log_error("mode:<<%s>>", model);
     }
   }
 
