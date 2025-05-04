@@ -337,13 +337,13 @@ int32_t DriverLidar::lidar_live_process() {
 
   // check lidar model
   {
-    char model[32] = {'\0'};
+    char model[32] = {};
     ret = inno_lidar_get_model(lidar_handle_, model, sizeof(model));
     if (ret != 0) {
       inno_log_error("cannot get lidar model, please check the network connection");
     } else {
       double enabled = atof(buf);
-      inno_log_error("mode:<<%s>>", model);
+      inno_log_error("model:<<%s>>", model);
     }
   }
 
