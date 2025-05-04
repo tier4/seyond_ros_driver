@@ -335,6 +335,18 @@ int32_t DriverLidar::lidar_live_process() {
     }
   }
 
+  // check lidar model
+  {
+    char model[32] = {'\0'};
+    ret = inno_lidar_get_model(lidar_handle_, model, sizeof(model));
+    if (ret != 0) {
+      inno_log_error("cannot get lidar model, please check the network connection");
+    } else {
+      double enabled = atof(buf);
+      inno_log_error("modeL %s", model);
+    }
+  }
+
   enum InnoReflectanceMode m = reflectance_mode_ ? INNO_REFLECTANCE_MODE_REFLECTIVITY : INNO_REFLECTANCE_MODE_INTENSITY;
   ret = inno_lidar_set_reflectance_mode(lidar_handle_, m);
   if (ret != 0) {
