@@ -130,8 +130,7 @@ public:
       inno_scan_msg_ = std::make_unique<seyond::msg::SeyondScan>();
     }
     seyond::msg::SeyondPacket msg;
-    rclcpp::Time stamp(timestamp);
-    msg.stamp = stamp;
+    msg.stamp = rclcpp::Time(timestamp * 1000);
     // msg.stamp = node_ptr_->get_clock()->now();
     msg.type = msg.PACKET_TYPE_POINTS;
     msg.data.resize(pkt_len);
@@ -151,10 +150,8 @@ public:
       ros_msg.header.stamp = stamp;
     } else {
       // Fallback to the provided timestamp if the frame is empty
-      rclcpp::Time stamp(timestamp);
-      ros_msg.header.stamp = stamp;
+      ros_msg.header.stamp = rclcpp::Time(timestamp * 1000);
     }
-    
     ros_msg.width = frame.width;
     ros_msg.height = frame.height;
     inno_frame_pub_->publish(std::move(ros_msg));
