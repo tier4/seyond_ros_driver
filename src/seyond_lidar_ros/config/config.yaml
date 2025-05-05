@@ -7,7 +7,7 @@
 
     frame_id: seyond # Frame id
 
-    lidar_name: seyond # Lidar name
+    lidar_model: FalconK # Lidar model(FalconK|RobinW)
     lidar_ip: 172.168.1.10 # Lidar ip
     port: 8010 # Lidar port
     udp_port: 8010 # Udp port

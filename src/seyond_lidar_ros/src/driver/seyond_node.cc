@@ -34,7 +34,8 @@ public:
     lidar_config_.replay_rosbag = declare_parameter<bool>("replay_rosbag", false);
     lidar_config_.packet_mode = declare_parameter<bool>("packet_mode", true);
     lidar_config_.frame_id = declare_parameter<std::string>("frame_id", "seyond");
-    lidar_config_.lidar_name = declare_parameter<std::string>("lidar_name", "seyond");
+    lidar_config_.lidar_model = declare_parameter<std::string>("lidar_model", "FalconK");
+    lidar_config_.lidar_name = this->get_name();
 
     lidar_config_.lidar_ip = declare_parameter<std::string>("lidar_ip", "172.168.1.10");
     lidar_config_.port = declare_parameter<int32_t>("port", 8010);

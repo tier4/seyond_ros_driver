@@ -65,6 +65,7 @@ DriverLidar::DriverLidar(const LidarConfig& lidar_config) {
   replay_rosbag_flag_ = lidar_config.replay_rosbag;
   packet_mode_ = lidar_config.packet_mode;
 
+  lidar_model_ = lidar_config.lidar_model;
   lidar_name_ = lidar_config.lidar_name;
   lidar_ip_ = lidar_config.lidar_ip;
   lidar_port_ = lidar_config.port;

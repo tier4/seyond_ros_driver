@@ -47,6 +47,7 @@ struct LidarConfig {
   std::string packet_topic;
   std::string frame_topic;
 
+  std::string lidar_model;
   std::string lidar_name;
   std::string lidar_ip;
   int32_t port;
@@ -144,6 +145,7 @@ class DriverLidar {
   std::function<void(pcl::PointCloud<SeyondPoint>&, double)> frame_publish_cb_;
   static std::function<void(int32_t, const char*, const char*)> ros_log_cb_s_;
 
+  std::string lidar_model_;
   std::string lidar_name_;
   std::string lidar_ip_;
   std::string pcap_file_;
