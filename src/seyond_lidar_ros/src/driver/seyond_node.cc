@@ -11,9 +11,11 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
+#include <chrono>
 #include <limits>
 #include <memory>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -27,7 +29,7 @@ namespace seyond_node {
 class SeyondNode : public rclcpp::Node {
 public:
   explicit SeyondNode(const rclcpp::NodeOptions &options)
-      : Node("seyond_node", options)
+      : Node("seyond_node", options), initialization_success_(false)
   {
     bool publish_pointcloud = declare_parameter<bool>("publish_pointcloud", true);
     log_level_ = declare_parameter<std::string>("log_level", "info");
@@ -64,7 +66,14 @@ public:
 
     seyond::DriverLidar::init_log_s(log_level_, 
         std::bind(&SeyondNode::rosLogCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    driver_ptr_ = std::make_unique<seyond::DriverLidar>(lidar_config_);
+    
+    try {
+      driver_ptr_ = std::make_unique<seyond::DriverLidar>(lidar_config_);
+    } catch (const std::exception& e) {
+      RCLCPP_ERROR(this->get_logger(), "Failed to create DriverLidar: %s", e.what());
+      throw;
+    }
+    
     inno_scan_msg_ = std::make_unique<seyond::msg::SeyondScan>();
 
     inno_frame_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("seyond_points", rclcpp::SensorDataQoS());
@@ -84,11 +93,27 @@ public:
       inno_pkt_sub_.reset();
     }
 
-    driver_ptr_->start_lidar();
+    // Add delay before starting lidar to ensure stable initialization
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    
+    try {
+      driver_ptr_->start_lidar();
+      initialization_success_ = true;
+      RCLCPP_INFO(this->get_logger(), "SeyondNode initialization completed successfully");
+    } catch (const std::exception& e) {
+      RCLCPP_ERROR(this->get_logger(), "Failed to start lidar: %s", e.what());
+      throw;
+    }
   }
 
   ~SeyondNode(){
-    driver_ptr_->stop_lidar();
+    if (driver_ptr_ && initialization_success_) {
+      try {
+        driver_ptr_->stop_lidar();
+      } catch (const std::exception& e) {
+        RCLCPP_ERROR(this->get_logger(), "Error during shutdown: %s", e.what());
+      }
+    }
     driver_ptr_.reset();
   }
 
@@ -184,6 +209,7 @@ private:
   std::string log_level_;
   seyond::LidarConfig lidar_config_;
   std::unique_ptr<seyond::DriverLidar> driver_ptr_;
+  bool initialization_success_;
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr inno_frame_pub_;
   rclcpp::Publisher<seyond::msg::SeyondScan>::SharedPtr inno_pkt_pub_;

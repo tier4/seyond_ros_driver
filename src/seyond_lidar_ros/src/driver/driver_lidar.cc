@@ -10,6 +10,8 @@
 
 #include <assert.h>
 
+#include <chrono>
+#include <stdexcept>
 #include <thread>
 #include <utility>
 
@@ -226,7 +228,7 @@ void DriverLidar::start_lidar() {
 
   if (!setup_lidar()) {
     inno_log_error("%s, setup_lidar failed!", lidar_name_.c_str());
-    return;
+    throw std::runtime_error("Failed to setup lidar: " + lidar_name_);
   }
 
   is_running_ = true;
@@ -234,17 +236,25 @@ void DriverLidar::start_lidar() {
 }
 
 void DriverLidar::stop_lidar() {
-  if (lidar_handle_ > 0) {
-    (void)inno_lidar_stop(lidar_handle_);
-    (void)inno_lidar_close(lidar_handle_);
-  }
-  current_frame_id_ = -1;
-  lidar_handle_ = -1;
   is_running_ = false;
   running_cv_.notify_all();
+  
   if (check_datacallback_thread_.joinable()) {
     check_datacallback_thread_.join();
   }
+  
+  if (lidar_handle_ > 0) {
+    int ret = inno_lidar_stop(lidar_handle_);
+    if (ret != 0) {
+      inno_log_warning("%s, inno_lidar_stop failed with code %d", lidar_name_.c_str(), ret);
+    }
+    ret = inno_lidar_close(lidar_handle_);
+    if (ret != 0) {
+      inno_log_warning("%s, inno_lidar_close failed with code %d", lidar_name_.c_str(), ret);
+    }
+  }
+  current_frame_id_ = -1;
+  lidar_handle_ = -1;
 }
 
 bool DriverLidar::setup_lidar() {
@@ -301,17 +311,26 @@ int32_t DriverLidar::lidar_live_process() {
     protocol_ = INNO_LIDAR_PROTOCOL_PCS_TCP;
   }
 
-  lidar_handle_ = inno_lidar_open_live(lidar_name_.c_str(), lidar_ip_.c_str(), lidar_port_, protocol_, tmp_udp_port);
+  int retry_count = 3;
+  for (int i = 0; i < retry_count; ++i) {
+    lidar_handle_ = inno_lidar_open_live(lidar_name_.c_str(), lidar_ip_.c_str(), lidar_port_, protocol_, tmp_udp_port);
+    if (lidar_handle_ >= 0) {
+      break;
+    }
+    inno_log_warning("Lidar %s connection attempt %d/%d failed, retrying...", lidar_name_.c_str(), i+1, retry_count);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+  
   if (lidar_handle_ < 0) {
-    inno_log_error("FATAL: Lidar %s invalid handle", lidar_name_.c_str());
+    inno_log_error("FATAL: Lidar %s invalid handle after %d attempts", lidar_name_.c_str(), retry_count);
     return -1;
   }
 
   int32_t ret = 0;
   // ros always run externally, so we set timeout longer
-  ret = inno_lidar_set_config_name_value(lidar_handle_, "LidarClient_Communication/get_conn_timeout_sec", "5.0");
+  ret = inno_lidar_set_config_name_value(lidar_handle_, "LidarClient_Communication/get_conn_timeout_sec", "10.0");
   if (ret != 0) {
-    inno_log_error("%s, inno_lidar_set_config_name_value 'get_conn_timeout_sec 5.0' failed %d", lidar_name_.c_str(),
+    inno_log_error("%s, inno_lidar_set_config_name_value 'get_conn_timeout_sec 10.0' failed %d", lidar_name_.c_str(),
                    ret);
   }
 
@@ -574,15 +593,26 @@ void DriverLidar::input_parameter_check() {
 
 void DriverLidar::start_check_datacallback_thread() {
   check_datacallback_thread_ = std::thread([&]() {
+    // Wait a bit before starting to ensure stable initialization
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    
     // connect to lidar
     int32_t start_val = -1;
+    int retry_count = 0;
+    const int max_retries = 5;
+    
     do {
       start_val = inno_lidar_start(lidar_handle_);
       if (start_val != 0) {
-        inno_log_error("%s, inno_lidar_start failed!", lidar_name_.c_str());
+        retry_count++;
+        inno_log_error("%s, inno_lidar_start failed! Attempt %d/%d", lidar_name_.c_str(), retry_count, max_retries);
+        if (!continue_live_ || retry_count >= max_retries) {
+          inno_log_error("%s, Failed to start lidar after %d attempts", lidar_name_.c_str(), retry_count);
+          break;
+        }
         {
           std::unique_lock<std::mutex> lock(running_mutex_);
-          running_cv_.wait_for(lock, std::chrono::seconds(10));
+          running_cv_.wait_for(lock, std::chrono::seconds(2));
         }
       }
     } while (start_val != 0 && continue_live_ && is_running_);
