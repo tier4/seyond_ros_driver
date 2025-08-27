@@ -14,6 +14,7 @@
 
 #include "seyond_decoder/msg/seyond_scan.hpp"
 #include "seyond_decoder/msg/seyond_packet.hpp"
+#include "seyond_decoder/point_types.h"
 #include "sdk_common/inno_lidar_packet.h"
 #include "sdk_common/inno_lidar_packet_utils.h"
 #include "sdk_common/inno_lidar_api.h"
@@ -27,7 +28,7 @@ namespace seyond {
 struct DecoderConfig {
   double max_range = 200.0;
   double min_range = 0.3;
-  int coordinate_mode = 0;
+  int coordinate_mode = 3;
   bool use_reflectance = true;
   std::string frame_id = "lidar";
 };
@@ -52,19 +53,19 @@ public:
 
 private:
   void processPacket(const seyond_decoder::msg::SeyondPacket& packet,
-                    pcl::PointCloud<pcl::PointXYZI>& cloud);
+                    pcl::PointCloud<PointXYZIT>& cloud);
 
-  void convertAndParse(const InnoDataPacket* pkt, 
-                      pcl::PointCloud<pcl::PointXYZI>& cloud);
+  void convertAndParse(const InnoDataPacket* pkt,
+                      pcl::PointCloud<PointXYZIT>& cloud);
 
   void dataPacketParse(const InnoDataPacket* pkt,
-                       pcl::PointCloud<pcl::PointXYZI>& cloud);
+                       pcl::PointCloud<PointXYZIT>& cloud);
 
   template <typename PointType>
-  void pointXyzDataParse(bool is_use_refl, uint32_t point_num, 
-                        PointType point_ptr, pcl::PointCloud<pcl::PointXYZI>& cloud);
+  void pointXyzDataParse(bool is_use_refl, uint32_t point_num,
+                        PointType point_ptr, pcl::PointCloud<PointXYZIT>& cloud);
 
-  void coordinateTransfer(pcl::PointXYZI* point, int mode, 
+  void coordinateTransfer(PointXYZIT* point, int mode,
                          float x, float y, float z);
 
 private:

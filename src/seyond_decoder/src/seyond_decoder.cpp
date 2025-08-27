@@ -25,7 +25,7 @@ sensor_msgs::msg::PointCloud2::SharedPtr SeyondDecoder::convert(
 sensor_msgs::msg::PointCloud2::SharedPtr SeyondDecoder::convert(
     const seyond_decoder::msg::SeyondScan& scan_msg) {
   
-  pcl::PointCloud<pcl::PointXYZI> cloud;
+  pcl::PointCloud<PointXYZIT> cloud;
   cloud.header.frame_id = scan_msg.header.frame_id;
   cloud.header.stamp = scan_msg.header.stamp.sec * 1000000ULL + scan_msg.header.stamp.nanosec / 1000;
   cloud.points.reserve(100000);  // Reserve space for points
@@ -33,7 +33,8 @@ sensor_msgs::msg::PointCloud2::SharedPtr SeyondDecoder::convert(
   // Process each packet in the scan
   for (const auto& packet : scan_msg.packets) {
     if (packet.type == seyond_decoder::msg::SeyondPacket::PACKET_TYPE_POINTS) {
-      processPacket(packet, cloud);
+        processPacket(packet, cloud);
+        std::cout << "Processed points packet" << std::endl;
     } else if (packet.type == seyond_decoder::msg::SeyondPacket::PACKET_TYPE_HVTABLE) {
       // Handle HV table packet if needed
       if (packet.data.size() > 0) {
@@ -41,6 +42,7 @@ sensor_msgs::msg::PointCloud2::SharedPtr SeyondDecoder::convert(
         std::memcpy(anglehv_table_.data(), packet.data.data(), packet.data.size());
         anglehv_table_init_ = true;
       }
+      std::cout << "Initialized angle HV table with " << anglehv_table_.size() << " entries" << std::endl;
     }
   }
   
@@ -49,7 +51,6 @@ sensor_msgs::msg::PointCloud2::SharedPtr SeyondDecoder::convert(
   pcl::toROSMsg(cloud, *msg);
   msg->header.stamp = scan_msg.header.stamp;
   msg->header.frame_id = scan_msg.header.frame_id;
-
   return msg;
 }
 
@@ -68,7 +69,7 @@ void SeyondDecoder::clearAngleHVTable() {
 }
 
 void SeyondDecoder::processPacket(const seyond_decoder::msg::SeyondPacket& packet,
-                                 pcl::PointCloud<pcl::PointXYZI>& cloud) {
+                                 pcl::PointCloud<PointXYZIT>& cloud) {
   if (packet.data.empty()) {
     return;
   }
@@ -78,7 +79,7 @@ void SeyondDecoder::processPacket(const seyond_decoder::msg::SeyondPacket& packe
 }
 
 void SeyondDecoder::convertAndParse(const InnoDataPacket* pkt,
-                                   pcl::PointCloud<pcl::PointXYZI>& cloud) {
+                                   pcl::PointCloud<PointXYZIT>& cloud) {
   if (CHECK_SPHERE_POINTCLOUD_DATA(pkt->type)) {
     // Convert sphere to xyz
     if (anglehv_table_init_) {
@@ -101,7 +102,7 @@ void SeyondDecoder::convertAndParse(const InnoDataPacket* pkt,
 }
 
 void SeyondDecoder::dataPacketParse(const InnoDataPacket* pkt,
-                                   pcl::PointCloud<pcl::PointXYZI>& cloud) {
+                                   pcl::PointCloud<PointXYZIT>& cloud) {
   // Calculate the point timestamp
   current_ts_start_ = pkt->common.ts_start_us / us_in_second_c;
   
@@ -119,13 +120,13 @@ void SeyondDecoder::dataPacketParse(const InnoDataPacket* pkt,
 
 template <typename PointType>
 void SeyondDecoder::pointXyzDataParse(bool is_use_refl, uint32_t point_num,
-                                     PointType point_ptr, pcl::PointCloud<pcl::PointXYZI>& cloud) {
+                                     PointType point_ptr, pcl::PointCloud<PointXYZIT>& cloud) {
   for (uint32_t i = 0; i < point_num; ++i, ++point_ptr) {
     if (point_ptr->radius > config_.max_range || point_ptr->radius < config_.min_range) {
       continue;
     }
     
-    pcl::PointXYZI point;
+    PointXYZIT point;
     
     // Set intensity based on point type and configuration
     if constexpr (std::is_same<PointType, const InnoEnXyzPoint*>::value) {
@@ -135,6 +136,9 @@ void SeyondDecoder::pointXyzDataParse(bool is_use_refl, uint32_t point_num,
     } else if constexpr (std::is_same<PointType, const InnoXyzPoint*>::value) {
       point.intensity = static_cast<float>(point_ptr->refl);
     }
+    
+    // Set timestamp
+    point.timestamp = point_ptr->ts_10us / ten_us_in_second_c + current_ts_start_;
     
     // Coordinate transformation
     coordinateTransfer(&point, config_.coordinate_mode, 
@@ -148,7 +152,7 @@ void SeyondDecoder::pointXyzDataParse(bool is_use_refl, uint32_t point_num,
   cloud.is_dense = false;
 }
 
-void SeyondDecoder::coordinateTransfer(pcl::PointXYZI* point, int mode,
+void SeyondDecoder::coordinateTransfer(PointXYZIT* point, int mode,
                                       float x, float y, float z) {
   switch (mode) {
     case 0:
@@ -187,8 +191,8 @@ void SeyondDecoder::coordinateTransfer(pcl::PointXYZI* point, int mode,
 
 // Explicit template instantiations
 template void SeyondDecoder::pointXyzDataParse<const InnoEnXyzPoint*>(
-    bool, uint32_t, const InnoEnXyzPoint*, pcl::PointCloud<pcl::PointXYZI>&);
+    bool, uint32_t, const InnoEnXyzPoint*, pcl::PointCloud<PointXYZIT>&);
 template void SeyondDecoder::pointXyzDataParse<const InnoXyzPoint*>(
-    bool, uint32_t, const InnoXyzPoint*, pcl::PointCloud<pcl::PointXYZI>&);
+    bool, uint32_t, const InnoXyzPoint*, pcl::PointCloud<PointXYZIT>&);
 
 } // namespace seyond
