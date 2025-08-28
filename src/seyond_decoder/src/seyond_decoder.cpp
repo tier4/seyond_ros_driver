@@ -30,20 +30,28 @@ sensor_msgs::msg::PointCloud2::SharedPtr SeyondDecoder::convert(
   cloud.header.stamp = scan_msg.header.stamp.sec * 1000000ULL + scan_msg.header.stamp.nanosec / 1000;
   cloud.points.reserve(100000);  // Reserve space for points
   
+  if(!anglehv_table_init_) {
+    const auto& packet = scan_msg.packets.back();
+    if (packet.type == seyond_decoder::msg::SeyondPacket::PACKET_TYPE_HVTABLE) {
+      anglehv_table_.resize(packet.data.size());
+      std::memcpy(anglehv_table_.data(), packet.data.data(), packet.data.size());
+      anglehv_table_init_ = true;
+    }
+  }
+
   // Process each packet in the scan
   for (const auto& packet : scan_msg.packets) {
     if (packet.type == seyond_decoder::msg::SeyondPacket::PACKET_TYPE_POINTS) {
         processPacket(packet, cloud);
-        std::cout << "Processed points packet" << std::endl;
-    } else if (packet.type == seyond_decoder::msg::SeyondPacket::PACKET_TYPE_HVTABLE) {
-      // Handle HV table packet if needed
-      if (packet.data.size() > 0) {
-        anglehv_table_.resize(packet.data.size());
-        std::memcpy(anglehv_table_.data(), packet.data.data(), packet.data.size());
-        anglehv_table_init_ = true;
-      }
-      std::cout << "Initialized angle HV table with " << anglehv_table_.size() << " entries" << std::endl;
     }
+    // else if (packet.type == seyond_decoder::msg::SeyondPacket::PACKET_TYPE_HVTABLE) {
+    //   // Handle HV table packet if needed
+    //   if (packet.data.size() > 0) {
+    //     anglehv_table_.resize(packet.data.size());
+    //     std::memcpy(anglehv_table_.data(), packet.data.data(), packet.data.size());
+    //     anglehv_table_init_ = true;
+    //   }
+    // }
   }
   
   // Convert to ROS message
