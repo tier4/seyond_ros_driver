@@ -48,6 +48,7 @@ public:
     rosbag2_storage::StorageOptions write_storage_options;
     write_storage_options.uri = output_bag_path_;
     write_storage_options.storage_id = "mcap";
+    write_storage_options.max_bagfile_duration = 60;
     
     writer.open(write_storage_options, converter_options);
     
@@ -139,16 +140,16 @@ public:
         
         if (pointcloud_msg) {
           // Serialize and write PointCloud2
-          rclcpp::SerializedMessage serialized_pointcloud;
-          pointcloud_serializer.serialize_message(pointcloud_msg.get(), &serialized_pointcloud);
+          auto serialized_msg = std::make_shared<rclcpp::SerializedMessage>();
+          pointcloud_serializer.serialize_message(pointcloud_msg.get(), serialized_msg.get());
           
-          auto converted_message = std::make_shared<rosbag2_storage::SerializedBagMessage>();
-          converted_message->topic_name = it->second;  // Use converted topic name
-          converted_message->time_stamp = bag_message->time_stamp;
-          converted_message->serialized_data = std::make_shared<rcutils_uint8_array_t>();
-          *converted_message->serialized_data = serialized_pointcloud.release_rcl_serialized_message();
+          // Write to bag file
+          writer.write(
+            serialized_msg,
+            it->second,  // Use converted topic name
+            "sensor_msgs/msg/PointCloud2",
+            rclcpp::Time(bag_message->time_stamp));
           
-          writer.write(converted_message);
           converted_count++;
           topic_conversion_counts[bag_message->topic_name]++;
         }
@@ -165,6 +166,7 @@ public:
         std::cout << "Processed " << message_count << " messages, converted " 
                   << converted_count << " SeyondScan messages" << std::endl;
       }
+
     }
     
     std::cout << "\n========== Conversion Summary ==========" << std::endl;
@@ -203,8 +205,6 @@ int main(int argc, char** argv) {
   std::string input_bag = argv[1];
   std::string output_bag = argv[2];
   
-  // Initialize ROS2
-  rclcpp::init(argc, argv);
   
   try {
     // Configure decoder with command line options
@@ -239,10 +239,7 @@ int main(int argc, char** argv) {
     converter.process();
   } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;
-    rclcpp::shutdown();
     return 1;
   }
-  
-  rclcpp::shutdown();
   return 0;
 }
