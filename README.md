@@ -1,7 +1,5 @@
 # Introduction
 
- [中文介绍](README_CN.md)
-
 **seyond_lidar_ros** is a driver package for the Seyond LiDAR, compatible with both ROS and ROS2.
 
 This project is built on the inno-lidar-sdk and serves as a demonstration for customers, providing a practical reference on how to utilize the inno-lidar-sdk.
@@ -15,8 +13,8 @@ This project is built on the inno-lidar-sdk and serves as a demonstration for cu
 ├── src
 │   └── seyond_lidar_ros                // seyond ros package
 ├── LICENSE
+├── AGENTS.md
 ├── CHANGELOG.md
-├── README_CN.md
 └── README.md
 ```
 
@@ -65,11 +63,9 @@ please refer to [config.yaml](/src/seyond_lidar_ros/config/config.yaml), support
 | config_path | ""  | config_path, if use this param, other params will become invalid |
 | log_level | info | limit log from lidar, can choose from (info warn error) |
 | replay_rosbag | false | replay rosbag packet flag |
-| packet_mode | false | packet mode enable |
-| aggregate_num | 20  | aggregate packets num |
+| packet_mode | true | packet mode enable |
+| publish_pointcloud | true | publish pointcloud |
 | frame_id | seyond | - |
-| frame_topic | iv_points | - |
-| packet_topic | iv_packets | - |
 | lidar_name | seyond | lidar name |
 | lidar_ip | 172.168.1.10 | - |
 | port | 8010 | tcp port |
@@ -109,9 +105,7 @@ source /opt/ros/<ROS_DISTRO>/setup.sh
 
 ```
 source install/setup.bash
-roslaunch seyond start.launch
-// or
-ros2 launch seyond start.py
+ros2 launch seyond seyond.launch.xml
 ```
 
 # Additional guides
@@ -124,7 +118,7 @@ ros2 launch seyond start.py
 
 [Record & Replay](doc/04_how_to_record_data.md)
 
-[Transform pointcloud](05_how_to_enable_transform.md)
+[Transform pointcloud](doc/05_how_to_enable_transform.md)
 
 [Frame Test](doc/06_how_to_use_test_node.md)
 
