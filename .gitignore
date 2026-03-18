@@ -18,6 +18,9 @@ dist/
 .idea/
 .vscode/
 
+# Claude Code
+.claude/
+
 # Unit test reports
 TEST*.xml
 
