@@ -5,14 +5,12 @@ on:
     branches: [main]
     paths:
       - src/seyond_lidar_ros/**
-      - scripts/run-clang-tidy.py
       - .clang-tidy
       - .github/workflows/clang-tidy.yml
   pull_request:
     branches: [main]
     paths:
       - src/seyond_lidar_ros/**
-      - scripts/run-clang-tidy.py
       - .clang-tidy
       - .github/workflows/clang-tidy.yml
 
@@ -45,6 +43,5 @@ jobs:
         run: |
           . /opt/ros/humble/setup.sh
           cd "$GITHUB_WORKSPACE"
-          python3 scripts/run-clang-tidy.py -p build/seyond -j "$(nproc)" -fix \
-            -config-file=.clang-tidy -extra-arg=-std=c++17 \
-            -source-filter='^(?=.*seyond_lidar_ros)(?!.*seyond_sdk)(?!.*seyond_test\.cc).*'
+          run-clang-tidy -p build/seyond -j "$(nproc)" -fix -extra-arg=-std=c++17 \
+            '^(?=.*seyond_lidar_ros)(?!.*seyond_sdk)(?!.*seyond_test\.cc).*'
