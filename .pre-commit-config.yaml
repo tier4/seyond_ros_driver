@@ -59,7 +59,7 @@ repos:
     hooks:
       - id: clang-tidy
         name: clang-tidy (run-clang-tidy.py)
-        entry: bash -c 'python3 scripts/run-clang-tidy.py -p build/seyond -j $(nproc) -config-file=.clang-tidy -extra-arg=-std=c++17 -source-filter="^(?=.*seyond_lidar_ros)(?!.*seyond_sdk)(?!.*seyond_test\\.cc).*"'
+        entry: bash -c 'python3 scripts/run-clang-tidy.py -p build/seyond -j $(nproc) -fix -config-file=.clang-tidy -extra-arg=-std=c++17 -source-filter="^(?=.*seyond_lidar_ros)(?!.*seyond_sdk)(?!.*seyond_test\\.cc).*"'
         language: system
         types_or: [c++, c, cuda]
         exclude: >-

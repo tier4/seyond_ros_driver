@@ -108,7 +108,7 @@ git submodule update --init --recursive
 
 ## Development
 
-Pre-commit runs markdownlint, shellcheck, clang-format, clang-tidy, cpplint, and others. **clang-tidy** runs via LLVM's `run-clang-tidy.py` (in `scripts/`) with parallel jobs; it requires a compilation database—build with `colcon build --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON` so that `build/seyond/compile_commands.json` exists—otherwise the hook will fail.
+Pre-commit runs markdownlint, shellcheck, clang-format, clang-tidy, cpplint, and others. **clang-tidy** runs via LLVM's `run-clang-tidy.py` (in `scripts/`) with parallel jobs and auto-fix (`-fix`) enabled; it requires a compilation database—build with `colcon build --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON` so that `build/seyond/compile_commands.json` exists—and `clang-apply-replacements` (e.g. from the `clang-tools` package) for applying fix-its.
 
 ## Quick start
 
