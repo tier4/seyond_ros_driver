@@ -55,11 +55,12 @@ repos:
         exclude: >-
           ^(build/|install/|log/|.*\.(mcap|db3|pcd|bag|bin|so|a|o|dylib|dll|exe)|.*/json\.hpp$)
 
-  - repo: https://github.com/pocc/pre-commit-hooks
-    rev: v1.3.5
+  - repo: local
     hooks:
       - id: clang-tidy
-        args: [--config-file=.clang-tidy, -p=build/seyond, --extra-arg=-std=c++17]
+        name: clang-tidy (run-clang-tidy.py)
+        entry: bash -c 'python3 scripts/run-clang-tidy.py -p build/seyond -j $(nproc) -config-file=.clang-tidy -extra-arg=-std=c++17 -source-filter="^(?=.*seyond_lidar_ros)(?!.*seyond_sdk)(?!.*seyond_test\\.cc).*"'
+        language: system
         types_or: [c++, c, cuda]
         exclude: >-
           ^(build/|install/|log/|.*\.(mcap|db3|pcd|bag|bin|so|a|o|dylib|dll|exe)|.*/json\.hpp$|.*/seyond_test\.cc$|.*/seyond_sdk/)
