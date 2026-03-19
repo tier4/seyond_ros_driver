@@ -26,22 +26,22 @@ Enable the transform_enable parameter.
 ```yaml
 /**:
   ros__parameters:
-    lidar_name: seyond                                  # Lidar name
-    lidar_ip: 172.168.1.10                              # Lidar ip
-    port: 8010                                          # Lidar port
-    udp_port: 8010                                      # Udp port
+    lidar_name: seyond # Lidar name
+    lidar_ip: 172.168.1.10 # Lidar ip
+    port: 8010 # Lidar port
+    udp_port: 8010 # Udp port
 
-    coordinate_mode: 3                                  # Coordinate mode, x/y/z, 0:up/right/forward 3:forward/left/up
+    coordinate_mode: 3 # Coordinate mode, x/y/z, 0:up/right/forward 3:forward/left/up
 
-    transform_enable: true                              # Transform enable
-    x: 1.0                                              # X
-    y: 0.2                                              # Y
-    z: 3.0                                              # Z
-    pitch: 0.2                                          # Pitch
-    yaw: 0.1                                            # Yaw
-    roll: 0.3                                           # Roll
+    transform_enable: true # Transform enable
+    x: 1.0 # X
+    y: 0.2 # Y
+    z: 3.0 # Z
+    pitch: 0.2 # Pitch
+    yaw: 0.1 # Yaw
+    roll: 0.3 # Roll
 
-    transform_matrix: ''                                # Transformation matrix string
+    transform_matrix: "" # Transformation matrix string
 ```
 
 ## 5.3 Dynamic Adjustment

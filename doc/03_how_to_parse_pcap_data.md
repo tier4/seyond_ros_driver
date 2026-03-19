@@ -22,16 +22,16 @@
 ```yaml
 /**:
   ros__parameters:
-    log_level: info                                     # Log level: info, warn, error
+    log_level: info # Log level: info, warn, error
 
-    frame_id: seyond                                    # Frame id
-    lidar_name: seyond                                  # Lidar name
-    lidar_ip: 172.168.1.10                              # Lidar ip
-    udp_port: 8010                                      # Udp port
+    frame_id: seyond # Frame id
+    lidar_name: seyond # Lidar name
+    lidar_ip: 172.168.1.10 # Lidar ip
+    udp_port: 8010 # Udp port
 
-    pcap_file: '/home/demo/demo.pcap'                   # Pcap file
-    packet_rate: 10000                                  # Packet rate
-    file_rewind: 0                                      # File rewind
+    pcap_file: "/home/demo/demo.pcap" # Pcap file
+    packet_rate: 10000 # Packet rate
+    file_rewind: 0 # File rewind
 ```
 
 ```bash

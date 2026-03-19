@@ -4,15 +4,15 @@
 
 ## 6.1 test.py
 
-| Parameter         | Default Value | description                        |
-| ----------------- | ------------- | ---------------------------------- |
-| frame_topic       | iv_points     | frame topic to be tested           |
-| packet_topic      | iv_packets    | packet topic to be tested          |
-| hz                | false         | print frame hz(include points num) |
-| window            | 30            | hz window size                     |
-| stamp             | false         | print frame stamp                  |
-| packet_size       | false         | print frame packet size            |
-| packet_loss_rate  | false         | print packet loss rate             |
+| Parameter        | Default Value | description                        |
+| ---------------- | ------------- | ---------------------------------- |
+| frame_topic      | iv_points     | frame topic to be tested           |
+| packet_topic     | iv_packets    | packet topic to be tested          |
+| hz               | false         | print frame hz(include points num) |
+| window           | 30            | hz window size                     |
+| stamp            | false         | print frame stamp                  |
+| packet_size      | false         | print frame packet size            |
+| packet_loss_rate | false         | print packet loss rate             |
 
 ## 6.2 Usage
 

@@ -8,24 +8,27 @@
 
 #include "driver_lidar.h"
 
+#include "sdk_common/inno_lidar_api.h"
+#include "sdk_common/inno_lidar_other_api.h"
+#include "sdk_common/inno_lidar_packet_utils.h"
+
 #include <assert.h>
 
 #include <thread>
 #include <utility>
 
-#include "sdk_common/inno_lidar_api.h"
-#include "sdk_common/inno_lidar_other_api.h"
-#include "sdk_common/inno_lidar_packet_utils.h"
-
 constexpr uint64_t KBUF_SIZE = 1024 * 1024 * 10;
 constexpr double us_in_second_c = 1000000.0;
 constexpr double ten_us_in_second_c = 100000.0;
 
-namespace seyond {
+namespace seyond
+{
 
-std::function<void(int, const char*, const char*)> DriverLidar::ros_log_cb_s_ = nullptr;
+std::function<void(int, const char *, const char *)> DriverLidar::ros_log_cb_s_ = nullptr;
 
-static void coordinate_transfer(SeyondPoint *point, int32_t coordinate_mode, float x, float y, float z) {
+static void coordinate_transfer(
+  SeyondPoint * point, int32_t coordinate_mode, float x, float y, float z)
+{
   switch (coordinate_mode) {
     case 0:
       point->x = x;  // up
@@ -61,7 +64,8 @@ static void coordinate_transfer(SeyondPoint *point, int32_t coordinate_mode, flo
   }
 }
 
-DriverLidar::DriverLidar(const LidarConfig& lidar_config) {
+DriverLidar::DriverLidar(const LidarConfig & lidar_config)
+{
   replay_rosbag_flag_ = lidar_config.replay_rosbag;
   packet_mode_ = lidar_config.packet_mode;
 
@@ -118,16 +122,19 @@ DriverLidar::DriverLidar(const LidarConfig& lidar_config) {
   pcl_pc_ptr = pcl::PointCloud<SeyondPoint>::Ptr(new pcl::PointCloud<SeyondPoint>());
 }
 
-DriverLidar::~DriverLidar() {
+DriverLidar::~DriverLidar()
+{
   stop_lidar();  // make sure that lidar_handle_ has been closed
   data_buffer.clear();
 }
 
-void DriverLidar::init_transform_matrix() {
+void DriverLidar::init_transform_matrix()
+{
   if (transform_matrix_.empty()) {
     double tmp_yaw, tmp_pitch, tmp_roll;
-    if (transform_degree_flag_ || yaw_ > (2 * M_PI) || yaw_ < -(2 * M_PI) || pitch_ > (2 * M_PI) ||
-        pitch_ < -(2 * M_PI) || roll_ > (2 * M_PI) || roll_ < -(2 * M_PI)) {
+    if (
+      transform_degree_flag_ || yaw_ > (2 * M_PI) || yaw_ < -(2 * M_PI) || pitch_ > (2 * M_PI) ||
+      pitch_ < -(2 * M_PI) || roll_ > (2 * M_PI) || roll_ < -(2 * M_PI)) {
       tmp_yaw = yaw_ * M_PI / 180;
       tmp_pitch = pitch_ * M_PI / 180;
       tmp_roll = roll_ * M_PI / 180;
@@ -137,9 +144,9 @@ void DriverLidar::init_transform_matrix() {
       tmp_pitch = pitch_;
       tmp_roll = roll_;
     }
-    inno_log_info("%s: transformation: x, y, z, yaw, pitch, roll: %.3f %.3f %.3f %.3f %.3f %.3f", lidar_name_.c_str(),
-                  x_, y_, z_, yaw_, pitch_, roll_);
-
+    inno_log_info(
+      "%s: transformation: x, y, z, yaw, pitch, roll: %.3f %.3f %.3f %.3f %.3f %.3f",
+      lidar_name_.c_str(), x_, y_, z_, yaw_, pitch_, roll_);
 
     Eigen::Vector3f euler_angle(tmp_yaw, tmp_pitch, tmp_roll);
     Eigen::AngleAxisf roll_AA(euler_angle(2), Eigen::Vector3f::UnitX());
@@ -158,39 +165,46 @@ void DriverLidar::init_transform_matrix() {
       iss >> m_arr[i] >> comma;
     }
 
-    T_2_0_ << m_arr[0], m_arr[1], m_arr[2], m_arr[3],
-              m_arr[4], m_arr[5], m_arr[6], m_arr[7],
-              m_arr[8], m_arr[9], m_arr[10], m_arr[11],
-              m_arr[12], m_arr[13], m_arr[14], m_arr[15];
+    T_2_0_ << m_arr[0], m_arr[1], m_arr[2], m_arr[3], m_arr[4], m_arr[5], m_arr[6], m_arr[7],
+      m_arr[8], m_arr[9], m_arr[10], m_arr[11], m_arr[12], m_arr[13], m_arr[14], m_arr[15];
     inno_log_info(
-        "%s: transformation matrix:\n %.3f %.3f %.3f %.3f\n %.3f %.3f %.3f %.3f\n %.3f %.3f %.3f %.3f\n %.3f %.3f "
-        "%.3f %.3f",
-        lidar_name_.c_str(), m_arr[0], m_arr[1], m_arr[2], m_arr[3], m_arr[4], m_arr[5], m_arr[6], m_arr[7], m_arr[8],
-        m_arr[9], m_arr[10], m_arr[11], m_arr[12], m_arr[13], m_arr[14], m_arr[15]);
+      "%s: transformation matrix:\n %.3f %.3f %.3f %.3f\n %.3f %.3f %.3f %.3f\n %.3f %.3f %.3f "
+      "%.3f\n %.3f %.3f "
+      "%.3f %.3f",
+      lidar_name_.c_str(), m_arr[0], m_arr[1], m_arr[2], m_arr[3], m_arr[4], m_arr[5], m_arr[6],
+      m_arr[7], m_arr[8], m_arr[9], m_arr[10], m_arr[11], m_arr[12], m_arr[13], m_arr[14],
+      m_arr[15]);
   }
 }
 
-int32_t DriverLidar::lidar_data_callback_s(int32_t handle, void *ctx, const InnoDataPacket *pkt) {
-  DriverLidar *context = reinterpret_cast<DriverLidar *>(ctx);
+int32_t DriverLidar::lidar_data_callback_s(int32_t handle, void * ctx, const InnoDataPacket * pkt)
+{
+  DriverLidar * context = reinterpret_cast<DriverLidar *>(ctx);
   assert(handle == context->lidar_handle_);
   return context->lidar_data_callback(pkt);
 }
 
-void DriverLidar::lidar_message_callback_s(int32_t handle, void *ctx, uint32_t from_remote, enum InnoMessageLevel level,
-                                           enum InnoMessageCode code, const char *error_message) {
-  DriverLidar *context = reinterpret_cast<DriverLidar *>(ctx);
+void DriverLidar::lidar_message_callback_s(
+  int32_t handle, void * ctx, uint32_t from_remote, enum InnoMessageLevel level,
+  enum InnoMessageCode code, const char * error_message)
+{
+  DriverLidar * context = reinterpret_cast<DriverLidar *>(ctx);
   assert(handle == context->lidar_handle_);
   context->lidar_message_callback(from_remote, level, code, error_message);
 }
 
-int32_t DriverLidar::lidar_status_callback_s(int32_t handle, void *ctx, const InnoStatusPacket *pkt) {
-  DriverLidar *context = reinterpret_cast<DriverLidar *>(ctx);
+int32_t DriverLidar::lidar_status_callback_s(
+  int32_t handle, void * ctx, const InnoStatusPacket * pkt)
+{
+  DriverLidar * context = reinterpret_cast<DriverLidar *>(ctx);
   assert(handle == context->lidar_handle_);
   return context->lidar_status_callback(pkt);
 }
 
-void DriverLidar::init_log_s(std::string &log_limit,
-                             const std::function<void(int32_t, const char *, const char *)> &callback) {
+void DriverLidar::init_log_s(
+  std::string & log_limit,
+  const std::function<void(int32_t, const char *, const char *)> & callback)
+{
   InnoLogLevel log_level_;
   DriverLidar::ros_log_cb_s_ = callback;
   if (log_limit.compare("info") == 0) {
@@ -206,12 +220,14 @@ void DriverLidar::init_log_s(std::string &log_limit,
   inno_lidar_set_logs(-1, -1, NULL, 0, 0, lidar_log_callback_s, NULL, NULL, 0, 0, 1);
 }
 
-void DriverLidar::lidar_log_callback_s(void *ctx, enum InnoLogLevel level, const char *header1, const char *header2,
-                                       const char *msg) {
+void DriverLidar::lidar_log_callback_s(
+  void * ctx, enum InnoLogLevel level, const char * header1, const char * header2, const char * msg)
+{
   DriverLidar::ros_log_cb_s_(static_cast<int32_t>(level), header2, msg);
 }
 
-void DriverLidar::start_lidar() {
+void DriverLidar::start_lidar()
+{
   bool ret = false;
   if (lidar_handle_ > 0) {
     inno_log_error("lidar_handle_ should <= 0");
@@ -233,7 +249,8 @@ void DriverLidar::start_lidar() {
   start_check_datacallback_thread();
 }
 
-void DriverLidar::stop_lidar() {
+void DriverLidar::stop_lidar()
+{
   if (lidar_handle_ > 0) {
     (void)inno_lidar_stop(lidar_handle_);
     (void)inno_lidar_close(lidar_handle_);
@@ -247,7 +264,8 @@ void DriverLidar::stop_lidar() {
   }
 }
 
-bool DriverLidar::setup_lidar() {
+bool DriverLidar::setup_lidar()
+{
   if (pcap_file_.size() > 0) {
     // pcap replay
     if (udp_port_ < 0) {
@@ -273,15 +291,17 @@ bool DriverLidar::setup_lidar() {
   return true;
 }
 
-int32_t DriverLidar::lidar_parameter_set() {
+int32_t DriverLidar::lidar_parameter_set()
+{
   int32_t ret = 0;
   ret = set_config_name_value();
   if (ret != 0) {
     inno_log_warning("%s, set config name failed", lidar_name_.c_str());
   }
 
-  ret = inno_lidar_set_callbacks(lidar_handle_, lidar_message_callback_s, lidar_data_callback_s,
-                                 lidar_status_callback_s, NULL, this);
+  ret = inno_lidar_set_callbacks(
+    lidar_handle_, lidar_message_callback_s, lidar_data_callback_s, lidar_status_callback_s, NULL,
+    this);
   if (ret != 0) {
     inno_log_error("%s, inno_lidar_set_callbacks failed!, ret: %d", lidar_name_.c_str(), ret);
     return ret;
@@ -290,7 +310,8 @@ int32_t DriverLidar::lidar_parameter_set() {
   return 0;
 }
 
-int32_t DriverLidar::lidar_live_process() {
+int32_t DriverLidar::lidar_live_process()
+{
   enum InnoLidarProtocol protocol_;
   // setup read from live
   uint16_t tmp_udp_port = 0;
@@ -301,7 +322,8 @@ int32_t DriverLidar::lidar_live_process() {
     protocol_ = INNO_LIDAR_PROTOCOL_PCS_TCP;
   }
 
-  lidar_handle_ = inno_lidar_open_live(lidar_name_.c_str(), lidar_ip_.c_str(), lidar_port_, protocol_, tmp_udp_port);
+  lidar_handle_ = inno_lidar_open_live(
+    lidar_name_.c_str(), lidar_ip_.c_str(), lidar_port_, protocol_, tmp_udp_port);
   if (lidar_handle_ < 0) {
     inno_log_error("FATAL: Lidar %s invalid handle", lidar_name_.c_str());
     return -1;
@@ -309,17 +331,21 @@ int32_t DriverLidar::lidar_live_process() {
 
   int32_t ret = 0;
   // ros always run externally, so we set timeout longer
-  ret = inno_lidar_set_config_name_value(lidar_handle_, "LidarClient_Communication/get_conn_timeout_sec", "5.0");
+  ret = inno_lidar_set_config_name_value(
+    lidar_handle_, "LidarClient_Communication/get_conn_timeout_sec", "5.0");
   if (ret != 0) {
-    inno_log_error("%s, inno_lidar_set_config_name_value 'get_conn_timeout_sec 5.0' failed %d", lidar_name_.c_str(),
-                   ret);
+    inno_log_error(
+      "%s, inno_lidar_set_config_name_value 'get_conn_timeout_sec 5.0' failed %d",
+      lidar_name_.c_str(), ret);
   }
 
   // enable client sdk midorder_fix
-  ret = inno_lidar_set_config_name_value(lidar_handle_, "LidarClient_StageClientRead/misorder_correct_enable", "1");
+  ret = inno_lidar_set_config_name_value(
+    lidar_handle_, "LidarClient_StageClientRead/misorder_correct_enable", "1");
   if (ret != 0) {
-    inno_log_warning("%s, inno_lidar_set_config_name_value 'misorder_correct_enable 1' failed %d", lidar_name_.c_str(),
-                     ret);
+    inno_log_warning(
+      "%s, inno_lidar_set_config_name_value 'misorder_correct_enable 1' failed %d",
+      lidar_name_.c_str(), ret);
   }
 
   // check lidar status
@@ -327,15 +353,18 @@ int32_t DriverLidar::lidar_live_process() {
   ret = inno_lidar_get_attribute_string(lidar_handle_, "enabled", buf, sizeof(buf));
 
   if (ret != 0) {
-    inno_log_error("%s, cannot get lidar status, please check the network connection", lidar_name_.c_str());
+    inno_log_error(
+      "%s, cannot get lidar status, please check the network connection", lidar_name_.c_str());
   } else {
     double enabled = atof(buf);
     if (enabled == 0) {
-      inno_log_error("%s, lidar internal server is off, please turn on the server", lidar_name_.c_str());
+      inno_log_error(
+        "%s, lidar internal server is off, please turn on the server", lidar_name_.c_str());
     }
   }
 
-  enum InnoReflectanceMode m = reflectance_mode_ ? INNO_REFLECTANCE_MODE_REFLECTIVITY : INNO_REFLECTANCE_MODE_INTENSITY;
+  enum InnoReflectanceMode m =
+    reflectance_mode_ ? INNO_REFLECTANCE_MODE_REFLECTIVITY : INNO_REFLECTANCE_MODE_INTENSITY;
   ret = inno_lidar_set_reflectance_mode(lidar_handle_, m);
   if (ret != 0) {
     inno_log_warning("%s, set_reflectance failed", lidar_name_.c_str());
@@ -349,7 +378,8 @@ int32_t DriverLidar::lidar_live_process() {
   return 0;
 }
 
-int32_t DriverLidar::pcap_playback_process() {
+int32_t DriverLidar::pcap_playback_process()
+{
   InputParam param;
   param.pcap_param.source_type = SOURCE_PCAP;
   strncpy(param.pcap_param.filename, pcap_file_.c_str(), pcap_file_.length() + 1);
@@ -359,8 +389,10 @@ int32_t DriverLidar::pcap_playback_process() {
   param.pcap_param.status_port = udp_port_;
   param.pcap_param.play_rate = packet_rate_;
   param.pcap_param.rewind = file_rewind_;
-  inno_log_info("## pcap_file is %s, device_ip_ is %s, play_rate is %d, rewind id %d, %d/%d/%d ##", pcap_file_.c_str(),
-                lidar_ip_.c_str(), packet_rate_, file_rewind_, udp_port_, udp_port_, udp_port_);
+  inno_log_info(
+    "## pcap_file is %s, device_ip_ is %s, play_rate is %d, rewind id %d, %d/%d/%d ##",
+    pcap_file_.c_str(), lidar_ip_.c_str(), packet_rate_, file_rewind_, udp_port_, udp_port_,
+    udp_port_);
   lidar_handle_ = inno_lidar_open_ctx(lidar_name_.c_str(), &param);
   if (lidar_handle_ < 0) {
     inno_log_error("FATAL: Lidar %s invalid handle", lidar_name_.c_str());
@@ -369,15 +401,16 @@ int32_t DriverLidar::pcap_playback_process() {
   return 0;
 }
 
-int32_t DriverLidar::set_config_name_value() {
+int32_t DriverLidar::set_config_name_value()
+{
   if (name_value_pairs_.size() > 0) {
-    char *rest = NULL;
-    char *token;
-    char *nv = strdup(name_value_pairs_.c_str());
+    char * rest = NULL;
+    char * token;
+    char * nv = strdup(name_value_pairs_.c_str());
     inno_log_info("Use name_value_pairs %s", name_value_pairs_.c_str());
     if (nv) {
       for (token = strtok_r(nv, ",", &rest); token != NULL; token = strtok_r(NULL, ",", &rest)) {
-        char *eq = strchr(token, '=');
+        char * eq = strchr(token, '=');
         if (eq) {
           *eq = 0;
           if (inno_lidar_set_config_name_value(lidar_handle_, token, eq + 1) != 0) {
@@ -395,7 +428,8 @@ int32_t DriverLidar::set_config_name_value() {
   return 0;
 }
 
-int32_t DriverLidar::lidar_data_callback(const InnoDataPacket *pkt) {
+int32_t DriverLidar::lidar_data_callback(const InnoDataPacket * pkt)
+{
   is_receive_data_ = true;
 
   if (current_frame_id_ == -1) {
@@ -406,7 +440,8 @@ int32_t DriverLidar::lidar_data_callback(const InnoDataPacket *pkt) {
 
   if (CHECK_CO_SPHERE_POINTCLOUD_DATA(pkt->type) && (!anglehv_table_init_)) {
     anglehv_table_.resize(kInnoAngleHVTableMaxSize);
-    int32_t ret = inno_lidar_get_anglehv_table(lidar_handle_, reinterpret_cast<InnoDataPacket*>(anglehv_table_.data()));
+    int32_t ret = inno_lidar_get_anglehv_table(
+      lidar_handle_, reinterpret_cast<InnoDataPacket *>(anglehv_table_.data()));
     if (ret == 0) {
       anglehv_table_init_ = true;
       inno_log_info("%s, Get Generic Compact Table", lidar_name_.c_str());
@@ -423,7 +458,8 @@ int32_t DriverLidar::lidar_data_callback(const InnoDataPacket *pkt) {
 
   if (packet_mode_) {
     uint64_t pkt_len = sizeof(InnoDataPacket) + pkt->item_number * pkt->item_size;
-    packet_publish_cb_(reinterpret_cast<const int8_t *>(pkt), pkt_len, pkt->common.ts_start_us, next_idx_flag);
+    packet_publish_cb_(
+      reinterpret_cast<const int8_t *>(pkt), pkt_len, pkt->common.ts_start_us, next_idx_flag);
   } else {
     if (next_idx_flag) {
       transform_pointcloud();
@@ -435,26 +471,29 @@ int32_t DriverLidar::lidar_data_callback(const InnoDataPacket *pkt) {
   return 0;
 }
 
-void DriverLidar::transform_pointcloud() {
+void DriverLidar::transform_pointcloud()
+{
   if (transform_enable_) {
     pcl::transformPointCloud(*pcl_pc_ptr, *pcl_pc_ptr, T_2_0_);
   }
 }
 
-void DriverLidar::convert_and_parse(const int8_t *pkt) {
+void DriverLidar::convert_and_parse(const int8_t * pkt)
+{
   convert_and_parse(reinterpret_cast<const InnoDataPacket *>(pkt));
 }
 
-void DriverLidar::convert_and_parse(const InnoDataPacket *pkt) {
+void DriverLidar::convert_and_parse(const InnoDataPacket * pkt)
+{
   if (CHECK_SPHERE_POINTCLOUD_DATA(pkt->type)) {
     // convert sphere to xyz
     if (anglehv_table_init_) {
       inno_lidar_convert_to_xyz_pointcloud2(
-          pkt, reinterpret_cast<InnoDataPacket *>(&data_buffer[0]), data_buffer.size(), false,
-          reinterpret_cast<InnoDataPacket *>(anglehv_table_.data()));
+        pkt, reinterpret_cast<InnoDataPacket *>(&data_buffer[0]), data_buffer.size(), false,
+        reinterpret_cast<InnoDataPacket *>(anglehv_table_.data()));
     } else {
-      inno_lidar_convert_to_xyz_pointcloud(pkt, reinterpret_cast<InnoDataPacket *>(&data_buffer[0]),
-                                           data_buffer.size(), false);
+      inno_lidar_convert_to_xyz_pointcloud(
+        pkt, reinterpret_cast<InnoDataPacket *>(&data_buffer[0]), data_buffer.size(), false);
     }
     data_packet_parse(reinterpret_cast<InnoDataPacket *>(&data_buffer[0]));
   } else if (CHECK_XYZ_POINTCLOUD_DATA(pkt->type)) {
@@ -464,23 +503,25 @@ void DriverLidar::convert_and_parse(const InnoDataPacket *pkt) {
   }
 }
 
-void DriverLidar::data_packet_parse(const InnoDataPacket *pkt) {
+void DriverLidar::data_packet_parse(const InnoDataPacket * pkt)
+{
   // calculate the point timestamp
   current_ts_start_ = pkt->common.ts_start_us / us_in_second_c;
   // adapt different data structures form different lidar
   if (CHECK_EN_XYZ_POINTCLOUD_DATA(pkt->type)) {
-    const InnoEnXyzPoint *pt =
-      reinterpret_cast<const InnoEnXyzPoint *>(reinterpret_cast<const char *>(pkt) + sizeof(InnoDataPacket));
+    const InnoEnXyzPoint * pt = reinterpret_cast<const InnoEnXyzPoint *>(
+      reinterpret_cast<const char *>(pkt) + sizeof(InnoDataPacket));
     point_xyz_data_parse<const InnoEnXyzPoint *>(pkt->use_reflectance, pkt->item_number, pt);
   } else {
-    const InnoXyzPoint *pt =
-      reinterpret_cast<const InnoXyzPoint *>(reinterpret_cast<const char *>(pkt) + sizeof(InnoDataPacket));
+    const InnoXyzPoint * pt = reinterpret_cast<const InnoXyzPoint *>(
+      reinterpret_cast<const char *>(pkt) + sizeof(InnoDataPacket));
     point_xyz_data_parse<const InnoXyzPoint *>(pkt->use_reflectance, pkt->item_number, pt);
   }
 }
 
 template <typename PointType>
-void DriverLidar::point_xyz_data_parse(bool is_use_refl, uint32_t point_num, PointType point_ptr) {
+void DriverLidar::point_xyz_data_parse(bool is_use_refl, uint32_t point_num, PointType point_ptr)
+{
   for (uint32_t i = 0; i < point_num; ++i, ++point_ptr) {
     SeyondPoint point;
     if (point_ptr->radius > max_range_ || point_ptr->radius < min_range_) {
@@ -488,8 +529,8 @@ void DriverLidar::point_xyz_data_parse(bool is_use_refl, uint32_t point_num, Poi
     }
 
     if constexpr (std::is_same<PointType, const InnoEnXyzPoint *>::value) {
-      point.intensity =
-          is_use_refl ? static_cast<float>(point_ptr->reflectance) : static_cast<float>(point_ptr->intensity);
+      point.intensity = is_use_refl ? static_cast<float>(point_ptr->reflectance)
+                                    : static_cast<float>(point_ptr->intensity);
     } else if constexpr (std::is_same<PointType, const InnoXyzPoint *>::value) {
       point.intensity = static_cast<float>(point_ptr->refl);
     }
@@ -513,25 +554,30 @@ void DriverLidar::point_xyz_data_parse(bool is_use_refl, uint32_t point_num, Poi
   }
 }
 
-void DriverLidar::lidar_message_callback(uint32_t from_remote, enum InnoMessageLevel level, enum InnoMessageCode code,
-                                          const char *msg) {
-  const char *remote = "";
+void DriverLidar::lidar_message_callback(
+  uint32_t from_remote, enum InnoMessageLevel level, enum InnoMessageCode code, const char * msg)
+{
+  const char * remote = "";
   if (from_remote) {
     remote = "REMOTE-";
   }
   if (level == INNO_MESSAGE_LEVEL_WARNING) {
-    inno_log_warning("%s%s level=%d, code=%d, message=%s", remote, inno_log_header_g[level], level, code, msg);
+    inno_log_warning(
+      "%s%s level=%d, code=%d, message=%s", remote, inno_log_header_g[level], level, code, msg);
   } else if (level < INNO_MESSAGE_LEVEL_WARNING) {
-    inno_log_error("%s%s level=%d, code=%d, message=%s", remote, inno_log_header_g[level], level, code, msg);
+    inno_log_error(
+      "%s%s level=%d, code=%d, message=%s", remote, inno_log_header_g[level], level, code, msg);
   }
 
-  if ((level <= INNO_MESSAGE_LEVEL_CRITICAL && code != INNO_MESSAGE_CODE_LIB_VERSION_MISMATCH) ||
-             (code == INNO_MESSAGE_CODE_CANNOT_READ)) {
+  if (
+    (level <= INNO_MESSAGE_LEVEL_CRITICAL && code != INNO_MESSAGE_CODE_LIB_VERSION_MISMATCH) ||
+    (code == INNO_MESSAGE_CODE_CANNOT_READ)) {
     fatal_error_ = true;
   }
 }
 
-int32_t DriverLidar::lidar_status_callback(const InnoStatusPacket *pkt) {
+int32_t DriverLidar::lidar_status_callback(const InnoStatusPacket * pkt)
+{
   // sanity check
   if (!inno_lidar_check_status_packet(pkt, 0)) {
     inno_log_error("%s, corrupted pkt->idx = %" PRI_SIZEU, lidar_name_.c_str(), pkt->idx);
@@ -545,15 +591,18 @@ int32_t DriverLidar::lidar_status_callback(const InnoStatusPacket *pkt) {
 
     int32_t ret = inno_lidar_printf_status_packet(pkt, buf, buf_size);
     if (ret > 0) {
-      inno_log_info("%s, Received status packet #%" PRI_SIZELU ": %s", lidar_name_.c_str(), cnt, buf);
+      inno_log_info(
+        "%s, Received status packet #%" PRI_SIZELU ": %s", lidar_name_.c_str(), cnt, buf);
     } else {
-      inno_log_warning("%s, Received status packet #%" PRI_SIZELU ": errorno: %d", lidar_name_.c_str(), cnt, ret);
+      inno_log_warning(
+        "%s, Received status packet #%" PRI_SIZELU ": errorno: %d", lidar_name_.c_str(), cnt, ret);
     }
   }
   return 0;
 }
 
-void DriverLidar::input_parameter_check() {
+void DriverLidar::input_parameter_check()
+{
   if (min_range_ >= max_range_) {
     inno_log_error("%s, The maximum range is less than The minimum range", lidar_name_.c_str());
   }
@@ -563,16 +612,20 @@ void DriverLidar::input_parameter_check() {
   }
 
   if (min_range_ > 550.0) {
-    inno_log_error("%s, The minimum range is greater than the lidar effective distance", lidar_name_.c_str());
+    inno_log_error(
+      "%s, The minimum range is greater than the lidar effective distance", lidar_name_.c_str());
   }
 
   if (!(packet_mode_) && replay_rosbag_flag_) {
-    inno_log_warning("%s, The replay_rosbag is only valid in packets mode, turn on packets mode", lidar_name_.c_str());
+    inno_log_warning(
+      "%s, The replay_rosbag is only valid in packets mode, turn on packets mode",
+      lidar_name_.c_str());
     packet_mode_ = true;
   }
 }
 
-void DriverLidar::start_check_datacallback_thread() {
+void DriverLidar::start_check_datacallback_thread()
+{
   check_datacallback_thread_ = std::thread([&]() {
     // connect to lidar
     int32_t start_val = -1;
