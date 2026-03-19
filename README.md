@@ -106,6 +106,10 @@ cd seyond_ros_driver
 git submodule update --init --recursive
 ```
 
+## Development
+
+Pre-commit runs markdownlint, shellcheck, clang-format, clang-tidy, cpplint, and others. **clang-tidy** requires a compilation database: build with `colcon build --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON` so that `build/seyond/compile_commands.json` exists; otherwise the hook will fail.
+
 ## Quick start
 
 If you have your own ROS/ROS2 workspace, please refer to [ROS package build](src/seyond_lidar_ros/README.md)

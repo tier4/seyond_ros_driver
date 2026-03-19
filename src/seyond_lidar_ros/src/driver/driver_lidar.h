@@ -6,7 +6,8 @@
  *  $Id$
  */
 
-#pragma once
+#ifndef SEYOND_LIDAR_ROS_SRC_DRIVER_DRIVER_LIDAR_H_
+#define SEYOND_LIDAR_ROS_SRC_DRIVER_DRIVER_LIDAR_H_
 #include "point_types.h"
 #include "sdk_common/inno_lidar_packet.h"
 #include "utils/inno_lidar_log.h"
@@ -94,6 +95,11 @@ class DriverLidar
 public:
   explicit DriverLidar(const LidarConfig & lidar_config);
   ~DriverLidar();
+
+  DriverLidar(const DriverLidar &) = delete;
+  DriverLidar & operator=(const DriverLidar &) = delete;
+  DriverLidar(DriverLidar &&) = delete;
+  DriverLidar & operator=(DriverLidar &&) = delete;
 
   // static callback warpper
   static void lidar_message_callback_s(
@@ -200,3 +206,5 @@ public:
 };
 
 }  // namespace seyond
+
+#endif  // SEYOND_LIDAR_ROS_SRC_DRIVER_DRIVER_LIDAR_H_

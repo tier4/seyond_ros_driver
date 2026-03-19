@@ -6,7 +6,9 @@
  *  $Id$
  */
 
-#pragma once
+#ifndef SEYOND_LIDAR_ROS_SRC_DRIVER_POINT_TYPES_H_
+#define SEYOND_LIDAR_ROS_SRC_DRIVER_POINT_TYPES_H_
+
 #include <pcl/point_types.h>
 
 namespace seyond
@@ -26,9 +28,13 @@ struct EIGEN_ALIGN16 PointXYZIT
 };
 }  // namespace seyond
 
+// NOLINTBEGIN(cppcoreguidelines-pro-type-union-access) -- PCL macro
 POINT_CLOUD_REGISTER_POINT_STRUCT(
   seyond::PointXYZIT,
   (float, x, x)(float, y, y)(float, z, z)(double, timestamp, timestamp)(
     float, intensity, intensity)(std::uint8_t, flags, flags)(std::uint8_t, elongation, elongation)(
     std::uint16_t, scan_id,
     scan_id)(std::uint16_t, scan_idx, scan_idx)(std::uint8_t, is_2nd_return, is_2nd_return))
+// NOLINTEND(cppcoreguidelines-pro-type-union-access)
+
+#endif  // SEYOND_LIDAR_ROS_SRC_DRIVER_POINT_TYPES_H_

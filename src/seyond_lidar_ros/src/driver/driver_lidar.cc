@@ -131,7 +131,9 @@ DriverLidar::~DriverLidar()
 void DriverLidar::init_transform_matrix()
 {
   if (transform_matrix_.empty()) {
-    double tmp_yaw, tmp_pitch, tmp_roll;
+    double tmp_yaw = 0.0;
+    double tmp_pitch = 0.0;
+    double tmp_roll = 0.0;
     if (
       transform_degree_flag_ || yaw_ > (2 * M_PI) || yaw_ < -(2 * M_PI) || pitch_ > (2 * M_PI) ||
       pitch_ < -(2 * M_PI) || roll_ > (2 * M_PI) || roll_ < -(2 * M_PI)) {
@@ -148,19 +150,20 @@ void DriverLidar::init_transform_matrix()
       "%s: transformation: x, y, z, yaw, pitch, roll: %.3f %.3f %.3f %.3f %.3f %.3f",
       lidar_name_.c_str(), x_, y_, z_, yaw_, pitch_, roll_);
 
-    Eigen::Vector3f euler_angle(tmp_yaw, tmp_pitch, tmp_roll);
+    Eigen::Vector3f euler_angle(
+      static_cast<float>(tmp_yaw), static_cast<float>(tmp_pitch), static_cast<float>(tmp_roll));
     Eigen::AngleAxisf roll_AA(euler_angle(2), Eigen::Vector3f::UnitX());
     Eigen::AngleAxisf pitch_AA(euler_angle(1), Eigen::Vector3f::UnitY());
     Eigen::AngleAxisf yaw_AA(euler_angle(0), Eigen::Vector3f::UnitZ());
     Eigen::Matrix3f R = (yaw_AA * pitch_AA * roll_AA).toRotationMatrix();
-    Eigen::Vector3f t(x_, y_, z_);
+    Eigen::Vector3f t(static_cast<float>(x_), static_cast<float>(y_), static_cast<float>(z_));
     T_2_0_.block<3, 3>(0, 0) = R;
     T_2_0_.block<3, 1>(0, 3) = t;
   } else {
     std::istringstream iss(transform_matrix_);
     std::string item;
     std::vector<float> m_arr(16);
-    char comma;
+    char comma = '\0';
     for (int i = 0; i < 16; i++) {
       iss >> m_arr[i] >> comma;
     }
@@ -205,7 +208,7 @@ void DriverLidar::init_log_s(
   std::string & log_limit,
   const std::function<void(int32_t, const char *, const char *)> & callback)
 {
-  InnoLogLevel log_level_;
+  InnoLogLevel log_level_ = INNO_LOG_LEVEL_INFO;
   DriverLidar::ros_log_cb_s_ = callback;
   if (log_limit.compare("info") == 0) {
     log_level_ = INNO_LOG_LEVEL_INFO;
@@ -284,11 +287,7 @@ bool DriverLidar::setup_lidar()
   }
 
   // set lidar parameters
-  if (lidar_parameter_set() != 0) {
-    return false;
-  }
-
-  return true;
+  return (lidar_parameter_set() == 0);
 }
 
 int32_t DriverLidar::lidar_parameter_set()
@@ -312,7 +311,7 @@ int32_t DriverLidar::lidar_parameter_set()
 
 int32_t DriverLidar::lidar_live_process()
 {
-  enum InnoLidarProtocol protocol_;
+  enum InnoLidarProtocol protocol_ = INNO_LIDAR_PROTOCOL_PCS_TCP;
   // setup read from live
   uint16_t tmp_udp_port = 0;
   if (udp_port_ >= 0) {
@@ -405,7 +404,7 @@ int32_t DriverLidar::set_config_name_value()
 {
   if (name_value_pairs_.size() > 0) {
     char * rest = NULL;
-    char * token;
+    char * token = NULL;
     char * nv = strdup(name_value_pairs_.c_str());
     inno_log_info("Use name_value_pairs %s", name_value_pairs_.c_str());
     if (nv) {
@@ -433,7 +432,7 @@ int32_t DriverLidar::lidar_data_callback(const InnoDataPacket * pkt)
   is_receive_data_ = true;
 
   if (current_frame_id_ == -1) {
-    current_frame_id_ = pkt->idx;
+    current_frame_id_ = static_cast<int64_t>(pkt->idx);
     inno_log_info("%s, get first frame id %lu", lidar_name_.c_str(), current_frame_id_);
     return 0;
   }
@@ -451,9 +450,9 @@ int32_t DriverLidar::lidar_data_callback(const InnoDataPacket * pkt)
   }
 
   bool next_idx_flag = false;
-  if (current_frame_id_ != pkt->idx) {
+  if (current_frame_id_ != static_cast<int64_t>(pkt->idx)) {
     next_idx_flag = true;
-    current_frame_id_ = pkt->idx;
+    current_frame_id_ = static_cast<int64_t>(pkt->idx);
   }
 
   if (packet_mode_) {

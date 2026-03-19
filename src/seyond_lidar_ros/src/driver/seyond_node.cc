@@ -38,22 +38,25 @@ public:
     lidar_config_.lidar_name = declare_parameter<std::string>("lidar_name", "seyond");
 
     lidar_config_.lidar_ip = declare_parameter<std::string>("lidar_ip", "172.168.1.10");
-    lidar_config_.port = declare_parameter<int32_t>("port", 8010);
-    lidar_config_.udp_port = declare_parameter<int32_t>("udp_port", 8010);
+    lidar_config_.port = static_cast<int32_t>(declare_parameter<int32_t>("port", 8010));
+    lidar_config_.udp_port = static_cast<int32_t>(declare_parameter<int32_t>("udp_port", 8010));
 
     lidar_config_.reflectance_mode = declare_parameter<bool>("reflectance_mode", true);
-    lidar_config_.multiple_return = declare_parameter<int32_t>("multiple_return", 1);
+    lidar_config_.multiple_return =
+      static_cast<int32_t>(declare_parameter<int32_t>("multiple_return", 1));
 
     lidar_config_.continue_live = declare_parameter<bool>("continue_live", false);
     lidar_config_.pcap_file = declare_parameter<std::string>("pcap_file", "");
     lidar_config_.hv_table_file = declare_parameter<std::string>("hv_table_file", "");
-    lidar_config_.packet_rate = declare_parameter<int32_t>("packet_rate", 10000);
+    lidar_config_.packet_rate =
+      static_cast<int32_t>(declare_parameter<int32_t>("packet_rate", 10000));
 
-    lidar_config_.file_rewind = declare_parameter<int32_t>("file_rewind", 0);
+    lidar_config_.file_rewind = static_cast<int32_t>(declare_parameter<int32_t>("file_rewind", 0));
     lidar_config_.max_range = declare_parameter<double>("max_range", 2000.0);  // unit: meter
     lidar_config_.min_range = declare_parameter<double>("min_range", 0.4);     // unit: meter
     lidar_config_.name_value_pairs = declare_parameter<std::string>("name_value_pairs", "");
-    lidar_config_.coordinate_mode = declare_parameter<int32_t>("coordinate_mode", 3);
+    lidar_config_.coordinate_mode =
+      static_cast<int32_t>(declare_parameter<int32_t>("coordinate_mode", 3));
     lidar_config_.transform_enable = declare_parameter<bool>("transform_enable", false);
     lidar_config_.x = declare_parameter<double>("x", 0.0);
     lidar_config_.y = declare_parameter<double>("y", 0.0);
@@ -98,6 +101,11 @@ public:
     driver_ptr_.reset();
   }
 
+  SeyondNode(const SeyondNode &) = delete;
+  SeyondNode & operator=(const SeyondNode &) = delete;
+  SeyondNode(SeyondNode &&) = delete;
+  SeyondNode & operator=(SeyondNode &&) = delete;
+
   void subscribePacket(const seyond::msg::SeyondScan::SharedPtr msg)
   {
     for (const auto & pkt : msg->packets) {
@@ -118,7 +126,7 @@ public:
     ros_msg.header = msg->header;
     ros_msg.width = driver_ptr_->pcl_pc_ptr->width;
     ros_msg.height = driver_ptr_->pcl_pc_ptr->height;
-    inno_frame_pub_->publish(std::move(ros_msg));
+    inno_frame_pub_->publish(ros_msg);
     driver_ptr_->pcl_pc_ptr->clear();
   }
 
@@ -135,11 +143,11 @@ public:
           msg.data.data(), driver_ptr_->anglehv_table_.data(), driver_ptr_->anglehv_table_.size());
         inno_scan_msg_->packets.emplace_back(msg);
       }
-      inno_pkt_pub_->publish(std::move(inno_scan_msg_));
+      inno_pkt_pub_->publish(*inno_scan_msg_);
       inno_scan_msg_ = std::make_unique<seyond::msg::SeyondScan>();
     }
     seyond::msg::SeyondPacket msg;
-    msg.stamp = rclcpp::Time(timestamp * 1000);
+    msg.stamp = rclcpp::Time(static_cast<int64_t>(timestamp * 1000));
     // msg.stamp = node_ptr_->get_clock()->now();
     msg.type = msg.PACKET_TYPE_POINTS;
     msg.data.resize(pkt_len);
@@ -156,15 +164,15 @@ public:
     // Use timestamp from the first point in the frame if available
     if (!frame.points.empty()) {
       double point_timestamp = frame.points.front().timestamp;
-      rclcpp::Time stamp(point_timestamp);
+      rclcpp::Time stamp(static_cast<int64_t>(point_timestamp));
       ros_msg.header.stamp = stamp;
     } else {
       // Fallback to the provided timestamp if the frame is empty
-      ros_msg.header.stamp = rclcpp::Time(timestamp * 1000);
+      ros_msg.header.stamp = rclcpp::Time(static_cast<int64_t>(timestamp * 1000));
     }
     ros_msg.width = frame.width;
     ros_msg.height = frame.height;
-    inno_frame_pub_->publish(std::move(ros_msg));
+    inno_frame_pub_->publish(ros_msg);
   }
 
   void rosLogCallback(int32_t level, const char * header2, const char * msg)

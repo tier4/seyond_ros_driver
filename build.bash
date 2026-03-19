@@ -28,7 +28,7 @@ echo -e "\n\033[1;32m-- (c). Build the driver...\033[0m"
 if [[ $ROS_VERSION -eq 1 ]]; then
     catkin_make install
 elif [[ $ROS_VERSION -eq 2 ]]; then
-    colcon build
+    colcon build --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 else
     echo "Can't find ROS_VERSION or ROS2_VERSION"
 fi

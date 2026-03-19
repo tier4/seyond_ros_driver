@@ -6,7 +6,8 @@
  *  $Id$
  */
 
-#pragma once
+#ifndef SEYOND_LIDAR_ROS_SRC_TEST_ROS2_TEST_HPP_
+#define SEYOND_LIDAR_ROS_SRC_TEST_ROS2_TEST_HPP_
 #include "seyond/msg/seyond_scan.hpp"
 #include "src/driver/point_types.h"
 
@@ -31,6 +32,12 @@ class ROSDemo
 public:
   ROSDemo() = default;
   ~ROSDemo();
+
+  ROSDemo(const ROSDemo &) = delete;
+  ROSDemo & operator=(const ROSDemo &) = delete;
+  ROSDemo(ROSDemo &&) = delete;
+  ROSDemo & operator=(ROSDemo &&) = delete;
+
   void init();
   void spin();
 
@@ -70,7 +77,7 @@ private:
   bool is_print_packet_loss_rate_{false};
 };
 
-ROSDemo::~ROSDemo()
+inline ROSDemo::~ROSDemo()
 {
   if (is_print_packet_loss_rate_) {
     total_expected_packets_count_ += last_sub_seq_ - cur_start_sub_seq_;
@@ -82,7 +89,7 @@ ROSDemo::~ROSDemo()
   }
 }
 
-void ROSDemo::init()
+inline void ROSDemo::init()
 {
   node_ptr_ = rclcpp::Node::make_shared(
     "test", rclcpp::NodeOptions()
@@ -112,23 +119,23 @@ void ROSDemo::init()
     packet_topic_, 100, std::bind(&ROSDemo::subscribePacket, this, std::placeholders::_1));
 }
 
-void ROSDemo::spin()
+inline void ROSDemo::spin()
 {
   rclcpp::spin(this->node_ptr_);
 }
 
-void ROSDemo::subscribePointCloud(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+inline void ROSDemo::subscribePointCloud(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
   if (is_print_frame_stamp_) printFrameStamp(msg);
   if (is_print_frame_hz_) printFrameHZ(msg);
 }
 
-void ROSDemo::printFrameStamp(const sensor_msgs::msg::PointCloud2::SharedPtr & msg)
+inline void ROSDemo::printFrameStamp(const sensor_msgs::msg::PointCloud2::SharedPtr & msg)
 {
   ROS_INFO("sec: %d, nanosec: %09d", msg->header.stamp.sec, msg->header.stamp.nanosec);
 }
 
-void ROSDemo::printFrameHZ(const sensor_msgs::msg::PointCloud2::SharedPtr & msg)
+inline void ROSDemo::printFrameHZ(const sensor_msgs::msg::PointCloud2::SharedPtr & msg)
 {
   static int32_t i = 0;
   if (first_time_) {
@@ -149,20 +156,20 @@ void ROSDemo::printFrameHZ(const sensor_msgs::msg::PointCloud2::SharedPtr & msg)
   }
 }
 
-void ROSDemo::subscribePacket(const seyond::msg::SeyondScan::SharedPtr msg)
+inline void ROSDemo::subscribePacket(const seyond::msg::SeyondScan::SharedPtr msg)
 {
   if (is_print_packet_size_) printPacketSize(msg);
   if (is_print_packet_loss_rate_) printPacketLossRate(msg);
 }
 
-void ROSDemo::printPacketSize(const seyond::msg::SeyondScan::SharedPtr & msg)
+inline void ROSDemo::printPacketSize(const seyond::msg::SeyondScan::SharedPtr & msg)
 {
   packet_size_ += msg->packets.size();
   ROS_INFO("packet size per frame: %d", packet_size_);
   packet_size_ = 0;
 }
 
-void ROSDemo::printPacketLossRate(const seyond::msg::SeyondScan::SharedPtr & msg)
+inline void ROSDemo::printPacketLossRate(const seyond::msg::SeyondScan::SharedPtr & msg)
 {
   packet_size_ += msg->packets.size();
   for (const auto & packet : msg->packets) {
@@ -194,3 +201,5 @@ void ROSDemo::printPacketLossRate(const seyond::msg::SeyondScan::SharedPtr & msg
     }
   }
 }
+
+#endif  // SEYOND_LIDAR_ROS_SRC_TEST_ROS2_TEST_HPP_

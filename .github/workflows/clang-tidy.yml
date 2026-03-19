@@ -1,0 +1,56 @@
+name: clang-tidy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/seyond_lidar_ros/**
+      - .clang-tidy
+      - .github/workflows/clang-tidy.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - src/seyond_lidar_ros/**
+      - .clang-tidy
+      - .github/workflows/clang-tidy.yml
+
+jobs:
+  clang-tidy:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install ROS 2 Humble
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lsb-release curl
+          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y ros-humble-desktop ros-humble-pcl-ros ros-humble-pcl-conversions
+          sudo apt-get install -y clang-tidy python3-colcon-common-extensions
+
+      - name: Build (generate compile_commands.json)
+        run: |
+          . /opt/ros/humble/setup.sh
+          export ROS_VERSION=2
+          export ROS_DISTRO=humble
+          ./build.bash
+
+      - name: Run clang-tidy
+        run: |
+          . /opt/ros/humble/setup.sh
+          cd "$GITHUB_WORKSPACE"
+          failed=0
+          while IFS= read -r f; do
+            if ! clang-tidy "$f" --config-file=.clang-tidy -p build/seyond --extra-arg=-std=c++17; then
+              failed=1
+            fi
+          done < <(find src/seyond_lidar_ros -type f \( -name '*.cc' -o -name '*.h' -o -name '*.hpp' \) \
+            ! -path '*/seyond_sdk/*' \
+            ! -name 'seyond_test.cc' \
+            ! -path '*/build/*' \
+            ! -path '*/install/*')
+          exit $failed
