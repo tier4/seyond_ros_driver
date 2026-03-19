@@ -69,24 +69,24 @@ please refer to [config.yaml](/src/seyond_lidar_ros/config/config.yaml), support
 | lidar_ip           | 172.168.1.10  | -                                                                                       |
 | port               | 8010          | tcp port                                                                                |
 | udp_port           | 8010          | udp port                                                                                |
-| reflectance_mode   | true          | 0:intensiy mode 1:reflectance mode                                                      |
+| reflectance_mode   | true          | 0:intensity mode 1:reflectance mode                                                     |
 | multiple_return    | 1             | lidar detection echo mode                                                               |
 | continue_live      | false         | fatal error encountered, restart driver                                                 |
-| pcap_file          | ""            | path of path playback pcapfile                                                          |
+| pcap_file          | ""            | path to pcap file for playback                                                          |
 | hv_table_file      | ""            | path of hv table file, only for generic lidar                                           |
 | packet_rate        | 10000         | file playback rate, if value <= 100 : value MB/s, if value > 100 : value / 10000 x      |
 | file_rewind        | 0             | number of file replays 0:no rewind -1: unlimited times                                  |
-| max_range          | 2000          | display point maximum distance                                                          |
-| min_range          | 0.4           | display point minimum distance                                                          |
+| max_range          | 2000          | display point maximum distance (m)                                                      |
+| min_range          | 0.4           | display point minimum distance (m)                                                      |
 | name_value_pairs   | ""            | some settings of lidar are consistent with the usage of inno_pc_client                  |
 | coordinate_mode    | 3             | convert the xyz direction of a point cloud, x/y/z, 0:up/right/forward 3:forward/left/up |
 | transform_enable   | false         | transform enable                                                                        |
-| x                  | 0.0           | -                                                                                       |
-| y                  | 0.0           | -                                                                                       |
-| z                  | 0.0           | -                                                                                       |
-| pitch              | 0.0           | -                                                                                       |
-| yaw                | 0.0           | -                                                                                       |
-| roll               | 0.0           | -                                                                                       |
+| x                  | 0.0           | translation X (m)                                                                       |
+| y                  | 0.0           | translation Y (m)                                                                       |
+| z                  | 0.0           | translation Z (m)                                                                       |
+| pitch              | 0.0           | pitch (rad)                                                                             |
+| yaw                | 0.0           | yaw (rad)                                                                               |
+| roll               | 0.0           | roll (rad)                                                                              |
 | transform_matrix   | ""            | transform matrix string, if not empty, priority is higher than x/y/z/pitch/yaw/roll     |
 
 ## Getting the source
