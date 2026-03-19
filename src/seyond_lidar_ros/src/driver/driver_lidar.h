@@ -7,24 +7,24 @@
  */
 
 #pragma once
-#include <pcl/point_cloud.h>
-#include <pcl/common/transforms.h>
-#include <Eigen/Eigen>
-#include <atomic>
-#include <chrono>
-#include <memory>
-#include <string>
-#include <vector>
-#include <thread>
-#include <mutex>
-#include <fstream>
-#include <condition_variable>
-
-
 #include "point_types.h"
 #include "sdk_common/inno_lidar_packet.h"
 #include "utils/inno_lidar_log.h"
 
+#include <Eigen/Eigen>
+
+#include <pcl/common/transforms.h>
+#include <pcl/point_cloud.h>
+
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <fstream>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
 
 #ifdef ENABLE_XYZIT
 typedef seyond::PointXYZIT SeyondPoint;
@@ -32,13 +32,16 @@ typedef seyond::PointXYZIT SeyondPoint;
 typedef pcl::PointXYZI SeyondPoint;
 #endif
 
-namespace seyond {
+namespace seyond
+{
 
-struct CommonConfig {
+struct CommonConfig
+{
   std::string log_level;
 };
 
-struct LidarConfig {
+struct LidarConfig
+{
   int32_t index;
   bool replay_rosbag;
   bool packet_mode;
@@ -76,7 +79,8 @@ struct LidarConfig {
   std::string transform_matrix;
 };
 
-struct TransformParam {
+struct TransformParam
+{
   double x;
   double y;
   double z;
@@ -85,43 +89,50 @@ struct TransformParam {
   double roll;
 };
 
-class DriverLidar {
- public:
-  explicit DriverLidar(const LidarConfig& lidar_config);
+class DriverLidar
+{
+public:
+  explicit DriverLidar(const LidarConfig & lidar_config);
   ~DriverLidar();
 
   // static callback warpper
-  static void lidar_message_callback_s(int32_t handle, void *ctx, uint32_t from_remote, enum InnoMessageLevel level,
-                                       enum InnoMessageCode code, const char *error_message);
-  static int32_t lidar_data_callback_s(int32_t handle, void *ctx, const InnoDataPacket *pkt);
-  static int32_t lidar_status_callback_s(int32_t handle, void *ctx, const InnoStatusPacket *pkt);
-  static void lidar_log_callback_s(void *ctx, enum InnoLogLevel level, const char *header1, const char *header2,
-                                   const char *msg);
+  static void lidar_message_callback_s(
+    int32_t handle, void * ctx, uint32_t from_remote, enum InnoMessageLevel level,
+    enum InnoMessageCode code, const char * error_message);
+  static int32_t lidar_data_callback_s(int32_t handle, void * ctx, const InnoDataPacket * pkt);
+  static int32_t lidar_status_callback_s(int32_t handle, void * ctx, const InnoStatusPacket * pkt);
+  static void lidar_log_callback_s(
+    void * ctx, enum InnoLogLevel level, const char * header1, const char * header2,
+    const char * msg);
   // lidar configuration
-  static void init_log_s(std::string &log_limit,
-                         const std::function<void(int32_t, const char *, const char *)> &callback);
+  static void init_log_s(
+    std::string & log_limit,
+    const std::function<void(int32_t, const char *, const char *)> & callback);
   void start_lidar();
   void stop_lidar();
 
-  void register_publish_packet_callback(const std::function<void(const int8_t*, uint64_t, double, bool)>& callback) {
+  void register_publish_packet_callback(
+    const std::function<void(const int8_t *, uint64_t, double, bool)> & callback)
+  {
     packet_publish_cb_ = callback;
   }
   void register_publish_frame_callback(
-      const std::function<void(pcl::PointCloud<SeyondPoint> &, double)> &callback) {
+    const std::function<void(pcl::PointCloud<SeyondPoint> &, double)> & callback)
+  {
     frame_publish_cb_ = callback;
   }
   void init_transform_matrix();
   void transform_pointcloud();
-  void convert_and_parse(const int8_t *pkt);
+  void convert_and_parse(const int8_t * pkt);
 
- private:
+private:
   // callback group
-  int32_t lidar_data_callback(const InnoDataPacket *pkt);
-  void lidar_message_callback(uint32_t from_remote, enum InnoMessageLevel level, enum InnoMessageCode code,
-                               const char *msg);
-  int32_t lidar_status_callback(const InnoStatusPacket *pkt);
+  int32_t lidar_data_callback(const InnoDataPacket * pkt);
+  void lidar_message_callback(
+    uint32_t from_remote, enum InnoMessageLevel level, enum InnoMessageCode code, const char * msg);
+  int32_t lidar_status_callback(const InnoStatusPacket * pkt);
 
-  void convert_and_parse(const InnoDataPacket *pkt);
+  void convert_and_parse(const InnoDataPacket * pkt);
   int32_t lidar_parameter_set();
   void input_parameter_check();
   bool setup_lidar();
@@ -129,20 +140,20 @@ class DriverLidar {
   int32_t pcap_playback_process();
   int32_t set_config_name_value();
   void start_check_datacallback_thread();
-  void data_packet_parse(const InnoDataPacket *pkt);
+  void data_packet_parse(const InnoDataPacket * pkt);
   template <typename PointType>
   void point_xyz_data_parse(bool is_use_refl, uint32_t point_num, PointType point_ptr);
 
- public:
+public:
   // for generic lidar
   bool anglehv_table_init_{false};
   std::vector<char> anglehv_table_;
 
   pcl::PointCloud<SeyondPoint>::Ptr pcl_pc_ptr;
 
-  std::function<void(const int8_t*, uint64_t, double, bool)> packet_publish_cb_;
-  std::function<void(pcl::PointCloud<SeyondPoint>&, double)> frame_publish_cb_;
-  static std::function<void(int32_t, const char*, const char*)> ros_log_cb_s_;
+  std::function<void(const int8_t *, uint64_t, double, bool)> packet_publish_cb_;
+  std::function<void(pcl::PointCloud<SeyondPoint> &, double)> frame_publish_cb_;
+  static std::function<void(int32_t, const char *, const char *)> ros_log_cb_s_;
 
   std::string lidar_name_;
   std::string lidar_ip_;

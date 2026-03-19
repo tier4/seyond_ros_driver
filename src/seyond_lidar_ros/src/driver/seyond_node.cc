@@ -6,10 +6,16 @@
  *  $Id$
  */
 
-#include <pcl_conversions/pcl_conversions.h>
+#include "driver_lidar.h"
+#include "seyond/msg/seyond_packet.hpp"
+#include "seyond/msg/seyond_scan.hpp"
+#include "utils/inno_lidar_log.h"
 
 #include <rclcpp/rclcpp.hpp>
+
 #include <sensor_msgs/msg/point_cloud2.hpp>
+
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <limits>
 #include <memory>
@@ -17,17 +23,12 @@
 #include <utility>
 #include <vector>
 
-#include "driver_lidar.h"
-#include "seyond/msg/seyond_packet.hpp"
-#include "seyond/msg/seyond_scan.hpp"
-#include "utils/inno_lidar_log.h"
-
-
-namespace seyond_node {
-class SeyondNode : public rclcpp::Node {
+namespace seyond_node
+{
+class SeyondNode : public rclcpp::Node
+{
 public:
-  explicit SeyondNode(const rclcpp::NodeOptions &options)
-      : Node("seyond_node", options)
+  explicit SeyondNode(const rclcpp::NodeOptions & options) : Node("seyond_node", options)
   {
     bool publish_pointcloud = declare_parameter<bool>("publish_pointcloud", true);
     log_level_ = declare_parameter<std::string>("log_level", "info");
@@ -39,7 +40,7 @@ public:
     lidar_config_.lidar_ip = declare_parameter<std::string>("lidar_ip", "172.168.1.10");
     lidar_config_.port = declare_parameter<int32_t>("port", 8010);
     lidar_config_.udp_port = declare_parameter<int32_t>("udp_port", 8010);
-    
+
     lidar_config_.reflectance_mode = declare_parameter<bool>("reflectance_mode", true);
     lidar_config_.multiple_return = declare_parameter<int32_t>("multiple_return", 1);
 
@@ -51,7 +52,7 @@ public:
     lidar_config_.file_rewind = declare_parameter<int32_t>("file_rewind", 0);
     lidar_config_.max_range = declare_parameter<double>("max_range", 2000.0);  // unit: meter
     lidar_config_.min_range = declare_parameter<double>("min_range", 0.4);     // unit: meter
-    lidar_config_.name_value_pairs = declare_parameter<std::string>("name_value_pairs","");
+    lidar_config_.name_value_pairs = declare_parameter<std::string>("name_value_pairs", "");
     lidar_config_.coordinate_mode = declare_parameter<int32_t>("coordinate_mode", 3);
     lidar_config_.transform_enable = declare_parameter<bool>("transform_enable", false);
     lidar_config_.x = declare_parameter<double>("x", 0.0);
@@ -60,26 +61,30 @@ public:
     lidar_config_.pitch = declare_parameter<double>("pitch", 0.0);
     lidar_config_.yaw = declare_parameter<double>("yaw", 0.0);
     lidar_config_.roll = declare_parameter<double>("roll", 0.0);
-    lidar_config_.transform_matrix = declare_parameter<std::string>("transform_matrix","");
+    lidar_config_.transform_matrix = declare_parameter<std::string>("transform_matrix", "");
 
-    seyond::DriverLidar::init_log_s(log_level_, 
-        std::bind(&SeyondNode::rosLogCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    seyond::DriverLidar::init_log_s(
+      log_level_, std::bind(
+                    &SeyondNode::rosLogCallback, this, std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3));
     driver_ptr_ = std::make_unique<seyond::DriverLidar>(lidar_config_);
     inno_scan_msg_ = std::make_unique<seyond::msg::SeyondScan>();
 
-    inno_frame_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("seyond_points", rclcpp::SensorDataQoS());
+    inno_frame_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "seyond_points", rclcpp::SensorDataQoS());
     driver_ptr_->register_publish_frame_callback(
-        std::bind(&SeyondNode::publishFrame, this, std::placeholders::_1, std::placeholders::_2));
+      std::bind(&SeyondNode::publishFrame, this, std::placeholders::_1, std::placeholders::_2));
 
     if (lidar_config_.packet_mode) {
       inno_pkt_pub_ = this->create_publisher<seyond::msg::SeyondScan>("seyond_packets", 100);
       inno_pkt_sub_ = this->create_subscription<seyond::msg::SeyondScan>(
-          "seyond_packets", 100, std::bind(&SeyondNode::subscribePacket, this, std::placeholders::_1));
-      driver_ptr_->register_publish_packet_callback(std::bind(&SeyondNode::publishPacket, this, std::placeholders::_1,
-                                                              std::placeholders::_2, std::placeholders::_3,
-                                                              std::placeholders::_4));
+        "seyond_packets", 100,
+        std::bind(&SeyondNode::subscribePacket, this, std::placeholders::_1));
+      driver_ptr_->register_publish_packet_callback(std::bind(
+        &SeyondNode::publishPacket, this, std::placeholders::_1, std::placeholders::_2,
+        std::placeholders::_3, std::placeholders::_4));
     }
-    if(!publish_pointcloud){
+    if (!publish_pointcloud) {
       inno_frame_pub_.reset();
       inno_pkt_sub_.reset();
     }
@@ -87,21 +92,23 @@ public:
     driver_ptr_->start_lidar();
   }
 
-  ~SeyondNode(){
+  ~SeyondNode()
+  {
     driver_ptr_->stop_lidar();
     driver_ptr_.reset();
   }
 
-  void subscribePacket(const seyond::msg::SeyondScan::SharedPtr msg) {
-    for (const auto& pkt : msg->packets) {
-      if(pkt.type == seyond::msg::SeyondPacket::PACKET_TYPE_HVTABLE){
+  void subscribePacket(const seyond::msg::SeyondScan::SharedPtr msg)
+  {
+    for (const auto & pkt : msg->packets) {
+      if (pkt.type == seyond::msg::SeyondPacket::PACKET_TYPE_HVTABLE) {
         if (lidar_config_.replay_rosbag && !driver_ptr_->anglehv_table_init_) {
           driver_ptr_->anglehv_table_.resize(pkt.data.size());
           std::memcpy(driver_ptr_->anglehv_table_.data(), pkt.data.data(), pkt.data.size());
           driver_ptr_->anglehv_table_init_ = true;
         }
-      }else{
-        driver_ptr_->convert_and_parse(reinterpret_cast<const int8_t*>(pkt.data.data()));
+      } else {
+        driver_ptr_->convert_and_parse(reinterpret_cast<const int8_t *>(pkt.data.data()));
       }
     }
 
@@ -115,15 +122,17 @@ public:
     driver_ptr_->pcl_pc_ptr->clear();
   }
 
-  void publishPacket(const int8_t* pkt, uint64_t pkt_len, double timestamp, bool next_idx) {
+  void publishPacket(const int8_t * pkt, uint64_t pkt_len, double timestamp, bool next_idx)
+  {
     if (next_idx) {
       inno_scan_msg_->header.stamp = inno_scan_msg_->packets.front().stamp;
       inno_scan_msg_->header.frame_id = lidar_config_.frame_id;
-      if (driver_ptr_->anglehv_table_init_){
+      if (driver_ptr_->anglehv_table_init_) {
         seyond::msg::SeyondPacket msg;
         msg.type = msg.PACKET_TYPE_HVTABLE;
         msg.data.resize(driver_ptr_->anglehv_table_.size());
-        std::memcpy(msg.data.data(), driver_ptr_->anglehv_table_.data(), driver_ptr_->anglehv_table_.size());
+        std::memcpy(
+          msg.data.data(), driver_ptr_->anglehv_table_.data(), driver_ptr_->anglehv_table_.size());
         inno_scan_msg_->packets.emplace_back(msg);
       }
       inno_pkt_pub_->publish(std::move(inno_scan_msg_));
@@ -138,11 +147,12 @@ public:
     inno_scan_msg_->packets.emplace_back(msg);
   }
 
-  void publishFrame(const pcl::PointCloud<SeyondPoint>& frame, double timestamp) {
+  void publishFrame(const pcl::PointCloud<SeyondPoint> & frame, double timestamp)
+  {
     sensor_msgs::msg::PointCloud2 ros_msg;
     pcl::toROSMsg(frame, ros_msg);
     ros_msg.header.frame_id = lidar_config_.frame_id;
-    
+
     // Use timestamp from the first point in the frame if available
     if (!frame.points.empty()) {
       double point_timestamp = frame.points.front().timestamp;
@@ -157,7 +167,8 @@ public:
     inno_frame_pub_->publish(std::move(ros_msg));
   }
 
-  void rosLogCallback(int32_t level, const char* header2, const char* msg) {
+  void rosLogCallback(int32_t level, const char * header2, const char * msg)
+  {
     switch (level) {
       case INNO_LOG_LEVEL_FATAL:
       case INNO_LOG_LEVEL_CRITICAL:
@@ -180,6 +191,7 @@ public:
         RCLCPP_DEBUG(this->get_logger(), "%s %s", header2, msg);
     }
   }
+
 private:
   std::string log_level_;
   seyond::LidarConfig lidar_config_;
@@ -191,7 +203,7 @@ private:
 
   std::unique_ptr<seyond::msg::SeyondScan> inno_scan_msg_;
 };
-}
+}  // namespace seyond_node
 
 #include <rclcpp_components/register_node_macro.hpp>
 

@@ -20,35 +20,26 @@
 ## 3.2 config.yaml
 
 ```yaml
-common:
-  log_level: info                                     #Log level: info, warn, error
-lidars:
-  - lidar:
-      frame_id: seyond                                #Frame id
-      packet_topic: /iv_packets                       #Packet topic
-      frame_topic: /iv_points                         #Frame topic
+/**:
+  ros__parameters:
+    log_level: info # Log level: info, warn, error
 
-      lidar_name: seyond                              #Lidar name
-      lidar_ip: 172.168.1.10                          #Lidar ip
-      udp_port: 8010                                  #Udp port, if < 0, use tcp
+    frame_id: seyond # Frame id
+    lidar_name: seyond # Lidar name
+    lidar_ip: 172.168.1.10 # Lidar ip
+    udp_port: 8010 # Udp port
 
-      pcap_file: '/home/demo/demo.pcap'               #Pcap file
-      packet_rate: 10000                              #Packet rate
-      file_rewind: 0                                  #File rewind
+    pcap_file: "/home/demo/demo.pcap" # Pcap file
+    packet_rate: 10000 # Packet rate
+    file_rewind: 0 # File rewind
 ```
 
 ```bash
-// ros
-roslaunch seyond start_with_config.launch
-// ros2
-ros2 launch seyond start_with_config.py
+ros2 launch seyond seyond.launch.xml
 ```
 
 ## 3.3 Start using command line parameters
 
 ```bash
-// ros
-roslaunch seyond start.launch pcap_file:=<pcap_file_path> lidar_ip:=<lidar_ip> udp_port:=<udp_port>
-// ros2
-ros2 launch seyond start.py pcap_file:=<pcap_file_path> lidar_ip:=<lidar_ip> udp_port:=<udp_port>
+ros2 launch seyond seyond.launch.xml pcap_file:=<pcap_file_path> lidar_ip:=<lidar_ip> udp_port:=<udp_port>
 ```

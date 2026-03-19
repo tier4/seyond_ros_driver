@@ -19,14 +19,14 @@ set(SEYOND_SDK_LIB_PATH ${SEYOND_SDK_PATH}/lib/libinnolidarsdkclient.a)
 
 if(NOT EXISTS ${SEYOND_SDK_LIB_PATH})
   message(STATUS "Seyond SDK not built yet. Building it now...")
-  
+
   execute_process(
     COMMAND bash -c "cd ${SEYOND_SDK_PATH}/build && ./build_unix.sh"
     RESULT_VARIABLE SDK_BUILD_RESULT
     OUTPUT_VARIABLE SDK_BUILD_OUTPUT
     ERROR_VARIABLE SDK_BUILD_ERROR
   )
-  
+
   if(NOT SDK_BUILD_RESULT EQUAL 0)
     message(FATAL_ERROR "Failed to build Seyond SDK: ${SDK_BUILD_ERROR}")
   else()

@@ -1,9 +1,10 @@
 # About the package
-  This is the primary package of the Seyond LiDAR ROS driver.
 
-  **directory structure**
+This is the primary package of the Seyond LiDAR ROS driver.
 
-```
+## Directory structure
+
+```text
 ├── config                              // lidar config file
 ├── launch                              // ros1 & ros2 launch file
 ├── msg                                 // msg file
@@ -33,25 +34,28 @@
 
 ```
 
-# Compile
+## Compile
 
- 1. **Copy**
-  copy /seyond_lidar_ros/ directory to your ROS/ROS2 workspace
- 
- 2. **Build Seyond SDK**
-  ```bash
-  cd seyond_lidar_ros/src/seyond_sdk/build
-  ./build_unix.sh
-  cd -
-  ```
-  if not success, please refer to the latest Seyond SDK documentation
+1. **Copy**
+   copy /seyond_lidar_ros/ directory to your ROS/ROS2 workspace
 
- 3. **Build ros package**
-  ```bash
-  source /opt/ros/<ROS_DISTRO>/setup.sh
-  // for ROS
-  catkin_make install
+2. **Build Seyond SDK**
 
-  // for ROS2
-  colcon build
-  ```
+   ```bash
+   cd seyond_lidar_ros/src/seyond_sdk/build
+   ./build_unix.sh
+   cd -
+   ```
+
+   if not success, please refer to the latest Seyond SDK documentation
+
+3. **Build ros package**
+
+   ```bash
+   source /opt/ros/<ROS_DISTRO>/setup.sh
+   # for ROS
+   catkin_make install
+
+   # for ROS2
+   colcon build
+   ```
