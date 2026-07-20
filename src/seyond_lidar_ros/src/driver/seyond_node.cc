@@ -80,9 +80,10 @@ public:
       inno_pkt_sub_ = this->create_subscription<seyond::msg::SeyondScan>(
         "seyond_packets", 100,
         std::bind(&SeyondNode::subscribePacket, this, std::placeholders::_1));
-      driver_ptr_->register_publish_packet_callback(std::bind(
-        &SeyondNode::publishPacket, this, std::placeholders::_1, std::placeholders::_2,
-        std::placeholders::_3, std::placeholders::_4));
+      driver_ptr_->register_publish_packet_callback(
+        std::bind(
+          &SeyondNode::publishPacket, this, std::placeholders::_1, std::placeholders::_2,
+          std::placeholders::_3, std::placeholders::_4));
     }
     if (!publish_pointcloud) {
       inno_frame_pub_.reset();
